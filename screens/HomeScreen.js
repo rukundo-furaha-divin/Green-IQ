@@ -2,6 +2,7 @@ import React, { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { API_BASE_URL } from '../utils/apiConfig';
 import Toast from "react-native-toast-message";
+import { SafeAreaView } from 'react-native-safe-area-context';
 import {
   StyleSheet,
   View,
@@ -9,7 +10,9 @@ import {
   Image,
   TouchableOpacity,
   ScrollView,
-  SafeAreaView,
+  Image,
+  TouchableOpacity,
+  ScrollView,
   StatusBar,
   Dimensions,
   Platform,
@@ -34,23 +37,9 @@ const ecoTips = [
     text: '💡 Tip: Rinse containers before recycling to avoid contamination.',
     likes: 89,
     liked: false
-  },
-  {
-    text: '♻️ Fact: Glass can be recycled endlessly without loss in quality.',
-    likes: 156,
-    liked: false
-  },
-  {
-    text: '🛍️ Tip: Bring your own bag to reduce plastic waste.',
-    likes: 72,
-    liked: false
-  },
-  {
-    text: '🌱 Fact: Composting food scraps reduces landfill waste and creates rich soil.',
-    likes: 203,
-    liked: false
   }
 ];
+
 
 const HomeScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);

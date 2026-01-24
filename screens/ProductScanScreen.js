@@ -173,7 +173,14 @@ const ProductScanScreen = () => {
           setVideoId(cached.videoId || "");
         }
       } else {
-        const deepSeekAnalysis = await retryFn(() => deepSeekRecommendation(json.product), { retries: 1, baseDelay: 800 });
+        const deepSeekAnalysis = await retryFn(async () => {
+          if (!process.env.DEEPSEEK_API_KEY) {
+            console.warn("DeepSeek API key missing in environment");
+            // Return fallback if key is missing to prevent crash
+            return "Environmental analysis unavailable (Missing API Key). Please recycle responsibly.";
+          }
+          return deepSeekRecommendation(json.product);
+        }, { retries: 1, baseDelay: 800 });
         let youtubeId = "";
         try {
           youtubeId = await extractYoutubeUrl(deepSeekAnalysis);

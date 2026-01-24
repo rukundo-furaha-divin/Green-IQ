@@ -192,7 +192,7 @@ export default function Rewards({ navigation }) {
               <View style={styles.iconContainer}>
                 {reward.rewardImage ? (
                   <Image
-                    source={{ uri: reward.rewardImage.startsWith('http') ? reward.rewardImage : `${API_BASE_URL}/${reward.rewardImage}` }}
+                    source={{ uri: reward.rewardImage.startsWith('http') ? reward.rewardImage : `${API_BASE_URL}/${reward.rewardImage.replace(/\\/g, '/')}` }}
                     style={styles.rewardIcon}
                     resizeMode="cover"
                   />
@@ -235,7 +235,7 @@ export default function Rewards({ navigation }) {
                 <View style={styles.modalImageContainer}>
                   {selectedReward.rewardImage ? (
                     <Image
-                      source={{ uri: selectedReward.rewardImage.startsWith('http') ? selectedReward.rewardImage : `${API_BASE_URL}/${selectedReward.rewardImage}` }}
+                      source={{ uri: selectedReward.rewardImage.startsWith('http') ? selectedReward.rewardImage : `${API_BASE_URL}/${selectedReward.rewardImage.replace(/\\/g, '/')}` }}
                       style={styles.modalImage}
                       resizeMode="cover"
                     />

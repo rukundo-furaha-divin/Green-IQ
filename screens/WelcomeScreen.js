@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, Image, StyleSheet, Animated, Dimensions, StatusBar, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const { width, height } = Dimensions.get('window');
 
@@ -24,7 +25,7 @@ const WelcomeScreen = ({ navigation }) => {
   }, []);
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container} edges={['top', 'bottom']}>
       <StatusBar barStyle="dark-content" backgroundColor="#FFFFFF" />
 
       <Animated.View
@@ -85,7 +86,7 @@ const WelcomeScreen = ({ navigation }) => {
           </TouchableOpacity>
         </View>
       </Animated.View>
-    </View>
+    </SafeAreaView>
   );
 };
 
