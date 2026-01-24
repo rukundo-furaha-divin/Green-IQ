@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { AppRegistry } from 'react-native';
@@ -34,119 +35,6 @@ import ScanChoiceScreen from './screens/ScanChoiceScreen';
 import ProductScanScreen from './screens/ProductScanScreen';
 import ClassificationResultScreen from './screens/ClassificationResultScreen';
 import NearByCompanies from './screens/NearByCompanies';
-//  Placeholder Challenges screen
-function ChallengesScreen({ navigation }) {
-  const tips = [
-    {
-      title: 'Recycle Plastic Bottles',
-      description: 'Always rinse and crush plastic bottles before recycling. Remove caps and labels if possible.'
-    },
-    {
-      title: 'Compost Food Scraps',
-      description: 'Composting reduces landfill waste and creates nutrient-rich soil for your garden.'
-    },
-    {
-      title: 'Reuse Shopping Bags',
-      description: 'Bring your own reusable bags to the store to cut down on plastic waste.'
-    },
-    {
-      title: 'Recycle Electronics Responsibly',
-      description: 'Take old electronics to certified e-waste centers instead of throwing them in the trash.'
-    },
-    {
-      title: 'Buy in Bulk',
-      description: 'Buying in bulk reduces packaging waste and is often more economical.'
-    },
-    {
-      title: 'Choose Products with Less Packaging',
-      description: 'Opt for products with minimal or recyclable packaging to reduce your environmental impact.'
-    },
-    {
-      title: 'Fact: Aluminum Can Be Recycled Forever',
-      description: 'Aluminum cans can be recycled indefinitely without losing quality.'
-    },
-    {
-      title: 'Fact: Glass is 100% Recyclable',
-      description: 'Glass can be recycled endlessly without loss in purity or quality.'
-    },
-    {
-      title: 'Fact: Recycling 1 Ton of Paper Saves 17 Trees',
-      description: 'Paper recycling conserves natural resources and reduces landfill space.'
-    },
-    {
-      title: 'Fact: Composting Reduces Methane',
-      description: 'Organic waste in landfills produces methane, a potent greenhouse gas. Composting helps prevent this.'
-    },
-    // More tips to fill the page
-    {
-      title: 'Fact: One Recycled Bottle Saves Enough Energy to Power a Light Bulb for 3 Hours',
-      description: 'Small actions add up! Every bottle recycled makes a difference.'
-    },
-    {
-      title: 'Fact: Recycling Steel Saves 75% of the Energy Needed to Make New Steel',
-      description: 'Metal recycling is highly efficient and reduces mining.'
-    },
-    {
-      title: 'Fact: E-Waste Contains Valuable Materials',
-      description: 'Recycling electronics recovers gold, silver, and rare earth metals.'
-    },
-    {
-      title: 'Fact: 91% of Plastic is Not Recycled',
-      description: 'Reduce plastic use and recycle whenever possible to help change this.'
-    },
-    {
-      title: 'Fact: Food Waste is a Major Source of Landfill Methane',
-      description: 'Composting food scraps is one of the best ways to fight climate change at home.'
-    },
-    {
-      title: 'Fact: Recycled Paper Uses 70% Less Energy',
-      description: 'Producing recycled paper saves water and energy compared to new paper.'
-    },
-    {
-      title: 'Fact: Recycling One Aluminum Can Saves Enough Energy to Run a TV for 3 Hours',
-      description: 'Aluminum is one of the most valuable materials you can recycle.'
-    },
-    {
-      title: 'Fact: Glass Bottles Take 4,000 Years to Decompose',
-      description: 'Recycle glass to keep it out of landfills and in use.'
-    },
-    {
-      title: 'Fact: Recycling Reduces Greenhouse Gas Emissions',
-      description: 'Every item recycled means less pollution and a healthier planet.'
-    },
-    {
-      title: 'Fact: You Can Recycle Paper Up to 7 Times',
-      description: 'Keep paper in the recycling loop as long as possible.'
-    },
-  ];
-
-  return (
-    <View style={{ flex: 1, backgroundColor: '#f8fffe' }}>
-      {/* Top bar with back arrow */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', paddingTop: 44, paddingBottom: 16, backgroundColor: '#1B5E20', paddingHorizontal: 10, marginBottom: 10 }}>
-        <TouchableOpacity onPress={() => navigation && navigation.goBack && navigation.goBack()} style={{ padding: 6, marginRight: 10 }}>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
-        <View style={{ flex: 1, alignItems: 'center' }}>
-          <Text style={{ color: '#fff', fontSize: 24, fontWeight: 'bold', letterSpacing: 1 }}>♻️ Recycling Tips & Facts</Text>
-          <Text style={{ color: '#e0ffe0', fontSize: 14, marginTop: 6, textAlign: 'center', maxWidth: 320 }}>
-            Learn how to recycle and manage products in a way that helps the planet!
-          </Text>
-        </View>
-      </View>
-      <View style={{ flex: 1, paddingHorizontal: 18 }}>
-        <View style={{ borderRadius: 16, overflow: 'hidden', marginBottom: 10 }}>
-          {tips.map((tip, idx) => (
-            <View key={idx} style={{ backgroundColor: idx % 2 === 0 ? '#e0f7fa' : '#fffbe6', padding: 18, marginBottom: 12, borderRadius: 14, elevation: 2, shadowColor: '#1B5E20', shadowOpacity: 0.06, shadowRadius: 4 }}>
-              <Text style={{ fontSize: 17, fontWeight: '700', color: '#1B5E20', marginBottom: 6 }}>{tip.title}</Text>
-              <Text style={{ fontSize: 14, color: '#333', lineHeight: 20 }}>{tip.description}</Text>
-            </View>
-          ))}
-        </View>
-      </View>
-    </View>
-  );
-}
 
 const Stack = createStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -263,44 +151,46 @@ function CompanyTabs() {
 function App() {
   return (
     <UserProvider>
-      <NavigationContainer>
-        <Stack.Navigator
-          initialRouteName="Welcome"
-          screenOptions={{
-            headerShown: false,
-          }}
-        >
-          {/* Auth screens */}
-          <Stack.Screen name="Welcome" component={WelcomeScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="Register" component={SignupScreen} />
-          <Stack.Screen name="LocationSelection" component={LocationSelectionScreen} />
+      <SafeAreaProvider>
+        <NavigationContainer>
+          <Stack.Navigator
+            initialRouteName="Welcome"
+            screenOptions={{
+              headerShown: false,
+            }}
+          >
+            {/* Auth screens */}
+            <Stack.Screen name="Welcome" component={WelcomeScreen} />
+            <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Register" component={SignupScreen} />
+            <Stack.Screen name="LocationSelection" component={LocationSelectionScreen} />
 
-          {/* Main app screens (with tab bar) */}
-          <Stack.Screen name="Home" component={AppTabs} />
-          <Stack.Screen name="CompanyHome" component={CompanyTabs} />
-          <Stack.Screen name="Map" component={CollectionPoints} />
-          <Stack.Screen name="Chat" component={Chat} />
-          <Stack.Screen name="ChatInfo" component={ChatInfoScreen} />
-          <Stack.Screen name="Dashboard" component={Dashboard} />
-          <Stack.Screen name="Challenges" component={ChallengesScreen} />
-          <Stack.Screen name="Achievements" component={Achievements} />
-          <Stack.Screen name="EcoPointsDetails" component={EcoPointsDetails} />
-          <Stack.Screen name="Leaderboard" component={Leaderboard} />
-          <Stack.Screen name="Community" component={Community} />
-          <Stack.Screen name="Rewards" component={Rewards} />
-          <Stack.Screen name="Referral" component={ReferralScreen} />
-          <Stack.Screen name="SafeZoneAlerts" component={SafeZoneAlerts} />
-          <Stack.Screen name="SafeZonesMap" component={SafeZonesMap} />
-          <Stack.Screen name="ScanChoice" component={ScanChoiceScreen} />
-          <Stack.Screen name="Scan" component={ScanScreen} />
-          <Stack.Screen name="ProductScan" component={ProductScanScreen} />
-          <Stack.Screen name="ClassificationResult" component={ClassificationResultScreen} />
-          <Stack.Screen name="EmployeeManagement" component={EmployeeManagement} />
-          <Stack.Screen name="CollectionManagement" component={CollectionManagement} />
-          <Stack.Screen name="NearByCompanies" component={NearByCompanies} />
-        </Stack.Navigator>
-      </NavigationContainer>
+            {/* Main app screens (with tab bar) */}
+            <Stack.Screen name="Home" component={AppTabs} />
+            <Stack.Screen name="CompanyHome" component={CompanyTabs} />
+            <Stack.Screen name="Map" component={CollectionPoints} />
+            <Stack.Screen name="Chat" component={Chat} />
+            <Stack.Screen name="ChatInfo" component={ChatInfoScreen} />
+            <Stack.Screen name="Dashboard" component={Dashboard} />
+            {/* Challenges Removed */}
+            <Stack.Screen name="Achievements" component={Achievements} />
+            <Stack.Screen name="EcoPointsDetails" component={EcoPointsDetails} />
+            <Stack.Screen name="Leaderboard" component={Leaderboard} />
+            <Stack.Screen name="Community" component={Community} />
+            <Stack.Screen name="Rewards" component={Rewards} />
+            <Stack.Screen name="Referral" component={ReferralScreen} />
+            <Stack.Screen name="SafeZoneAlerts" component={SafeZoneAlerts} />
+            <Stack.Screen name="SafeZonesMap" component={SafeZonesMap} />
+            <Stack.Screen name="ScanChoice" component={ScanChoiceScreen} />
+            <Stack.Screen name="Scan" component={ScanScreen} />
+            <Stack.Screen name="ProductScan" component={ProductScanScreen} />
+            <Stack.Screen name="ClassificationResult" component={ClassificationResultScreen} />
+            <Stack.Screen name="EmployeeManagement" component={EmployeeManagement} />
+            <Stack.Screen name="CollectionManagement" component={CollectionManagement} />
+            <Stack.Screen name="NearByCompanies" component={NearByCompanies} />
+          </Stack.Navigator>
+        </NavigationContainer>
+      </SafeAreaProvider>
       <Toast />
     </UserProvider>
   );
