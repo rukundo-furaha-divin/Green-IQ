@@ -49,7 +49,7 @@ export default {
             ],
             config: {
                 googleMaps: {
-                    apiKey: process.env.GOOGLE_MAPS_API_KEY
+                    apiKey: process.env.GOOGLE_MAPS_API_KEY || "AIzaSy_PLACEHOLDER_KEY_FOR_BUILD_ONLY"
                 }
             },
             networkSecurityConfig: "./network_security_config.xml"
@@ -67,7 +67,8 @@ export default {
             eas: {
                 projectId: "cffe555f-2c68-412c-95da-7c3acfad2615"
             },
-            deepSeekApiKey: process.env.DEEPSEEK_API_KEY
+            deepSeekApiKey: process.env.DEEPSEEK_API_KEY || "sk-PLACEHOLDER_KEY_FOR_BUILD_ONLY"
         }
     }
 };
+
