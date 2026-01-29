@@ -176,6 +176,7 @@ def method_not_allowed(_):
 # CORS (Optional)
 # ===============================
 
+
 @app.after_request
 def after_request(response):
     response.headers.add("Access-Control-Allow-Origin", "*")
