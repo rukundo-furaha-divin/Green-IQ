@@ -1,15 +1,7 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import { API_BASE_URL } from '../utils/apiConfig';
 import { calculateZoneScore, getScoreBreakdown, getSafetyLevel } from '../utils/SafeZoneScoring';
-
-// Mock API endpoints - in a real app, these would be actual API calls
-const API_ENDPOINTS = {
-  SAFE_ZONES: 'https://api.greeniq.com/safe-zones',
-  CLIMATE_DATA: 'https://api.greeniq.com/climate-data',
-  WASTE_CENTERS: 'https://api.greeniq.com/waste-centers',
-  AIR_QUALITY: 'https://api.greeniq.com/air-quality',
-  WEATHER_ALERTS: 'https://api.greeniq.com/weather-alerts',
-  USER_REPORTS: 'https://api.greeniq.com/user-reports'
-};
 
 class SafeZoneService {
   constructor() {
@@ -55,82 +47,18 @@ class SafeZoneService {
 
   // Fetch safe zones from API
   async fetchSafeZonesFromAPI() {
-    // Mock API call - replace with actual API implementation
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 1,
-            name: 'Nyarugenge Eco-Safe Zone',
-            coords: { latitude: -1.9477, longitude: 30.0567 },
-            address: 'Gitega, Nyarugenge',
-            description: 'Climate-resilient shelter with solar power and water conservation.',
-            climateRisks: ['Low flood risk', 'Moderate heat risk'],
-            greenInfrastructure: ['Solar panels', 'Rainwater harvesting', 'Community garden'],
-            recyclingCenters: 3,
-            airQuality: 'Good',
-            emergencyCapacity: 150,
-            lastUpdated: new Date().toISOString(),
-            communityRating: 4.2,
-            features: ['Emergency shelter', 'Medical aid', 'Food storage', 'Communication hub'],
-            status: 'active',
-            manager: 'Jean Pierre',
-            contact: '+250 123 456 789',
-            operatingHours: '24/7',
-            capacity: '150 people',
-            facilities: ['Medical station', 'Food distribution', 'Water purification', 'Solar charging'],
-            district: 'Nyarugenge',
-            sector: 'Gitega'
-          },
-          {
-            id: 2,
-            name: 'Gasabo Green Refuge',
-            coords: { latitude: -1.9333, longitude: 30.0800 },
-            address: 'Kacyiru, Gasabo',
-            description: 'Sustainable cooling center with renewable energy systems.',
-            climateRisks: ['Low flood risk', 'Low heat risk'],
-            greenInfrastructure: ['Solar panels', 'Green roof', 'Biodiversity garden', 'Waste-to-energy'],
-            recyclingCenters: 5,
-            airQuality: 'Excellent',
-            emergencyCapacity: 200,
-            lastUpdated: new Date().toISOString(),
-            communityRating: 4.5,
-            features: ['Cooling center', 'Water purification', 'Solar charging', 'Community kitchen'],
-            status: 'active',
-            manager: 'Marie Claire',
-            contact: '+250 987 654 321',
-            operatingHours: '24/7',
-            capacity: '200 people',
-            facilities: ['Cooling systems', 'Air purification', 'Waste processing', 'Community education'],
-            district: 'Gasabo',
-            sector: 'Kacyiru'
-          },
-          {
-            id: 3,
-            name: 'Kicukiro Climate Haven',
-            coords: { latitude: -1.9750, longitude: 30.1100 },
-            address: 'Niboye, Kicukiro',
-            description: 'Multi-purpose safe zone for extreme weather events.',
-            climateRisks: ['Moderate flood risk', 'Low heat risk'],
-            greenInfrastructure: ['Solar panels', 'Flood barriers', 'Urban forest'],
-            recyclingCenters: 2,
-            airQuality: 'Good',
-            emergencyCapacity: 120,
-            lastUpdated: new Date().toISOString(),
-            communityRating: 4.0,
-            features: ['Flood shelter', 'Emergency power', 'Medical station', 'Food distribution'],
-            status: 'active',
-            manager: 'Paul Kagame',
-            contact: '+250 555 123 456',
-            operatingHours: '24/7',
-            capacity: '120 people',
-            facilities: ['Flood protection', 'Emergency medical', 'Food storage', 'Communication hub'],
-            district: 'Kicukiro',
-            sector: 'Niboye'
-          }
-        ]);
-      }, 1000);
-    });
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/safe-zones`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        timeout: 10000
+      });
+      return response.data.safeZones || response.data || [];
+    } catch (error) {
+      console.error('Error fetching safe zones from backend:', error);
+      // Return fallback data if API fails
+      return this.getFallbackSafeZones();
+    }
   }
 
   // Get climate alerts
@@ -153,50 +81,18 @@ class SafeZoneService {
 
   // Fetch climate alerts from API
   async fetchClimateAlertsFromAPI() {
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve([
-          {
-            id: 1,
-            type: 'Flood Warning',
-            severity: 'High',
-            icon: 'water-outline',
-            color: '#2196F3',
-            text: 'Heavy rainfall expected in Gasabo district. Safe zones with waste management facilities are open for shelter.',
-            affectedAreas: ['Nyarugenge', 'Kicukiro', 'Gasabo'],
-            duration: '24 hours',
-            recommendations: [
-              'Visit safe zones with proper waste disposal facilities',
-              'Avoid areas near waste collection points during flooding',
-              'Use designated recycling centers for emergency shelter',
-              'Report any waste-related environmental hazards'
-            ],
-            safeZones: ['Gasabo Green Refuge', 'Remera Sustainable Hub'],
-            wasteImpact: 'Flooding may affect waste collection routes and recycling facilities',
-            timestamp: new Date().toISOString()
-          },
-          {
-            id: 2,
-            type: 'Heatwave Alert',
-            severity: 'Moderate',
-            icon: 'thermometer-outline',
-            color: '#FF5722',
-            text: 'Extreme heat expected across all districts. Cooling centers with sustainable energy systems available.',
-            affectedAreas: ['All districts'],
-            duration: '48 hours',
-            recommendations: [
-              'Visit cooling centers with solar-powered systems',
-              'Stay hydrated and avoid outdoor waste disposal activities',
-              'Use air-conditioned recycling centers',
-              'Reduce waste generation during heatwave'
-            ],
-            safeZones: ['Nyarugenge Eco-Safe Zone', 'Kimironko Eco-Sanctuary'],
-            wasteImpact: 'Heat may accelerate waste decomposition - use proper disposal methods',
-            timestamp: new Date().toISOString()
-          }
-        ]);
-      }, 500);
-    });
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get(`${API_BASE_URL}/climate-alerts`, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        timeout: 10000
+      });
+      return response.data.alerts || response.data || [];
+    } catch (error) {
+      console.error('Error fetching climate alerts from backend:', error);
+      // Return fallback data if API fails
+      return this.getFallbackClimateAlerts();
+    }
   }
 
   // Get nearby recycling centers

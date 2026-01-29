@@ -108,7 +108,7 @@ const ProfileScreen = ({ navigation }) => {
                 <Text
                   style={{ color: "#00C896", fontWeight: "bold", fontSize: 18 }}
                 >
-                  Eco Points
+                  {t('profile.ecoPoints')}
                 </Text>
                 <Text
                   style={{ color: "#1B5E20", fontWeight: "bold", fontSize: 28 }}
@@ -252,19 +252,19 @@ const ProfileScreen = ({ navigation }) => {
           </TouchableOpacity> */}
           <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="help-circle-outline" size={24} color="#1b4332" />
-            <Text style={styles.menuItemText}>Help Center</Text>
+            <Text style={styles.menuItemText}>{t('profile.helpCenter')}</Text>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => navigation.navigate("Referral")}
           >
             <Ionicons name="people-outline" size={24} color="#1b4332" />
-            <Text style={styles.menuItemText}>Invite Friends</Text>
+            <Text style={styles.menuItemText}>{t('profile.inviteFriends')}</Text>
           </TouchableOpacity>
           <Pressable style={[styles.menuItem, styles.logoutButton]} onPress={handleLogout}>
             <Ionicons name="log-out-outline" size={24} color="#d9534f" />
             <Text style={[styles.menuItemText, { color: "#d9534f" }]}>
-              Logout
+              {t('profile.logout')}
             </Text>
           </Pressable>
         </View>
@@ -279,7 +279,7 @@ const ProfileScreen = ({ navigation }) => {
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Select Language</Text>
+            <Text style={styles.modalTitle}>{t('settings.selectLanguage')}</Text>
             {['en', 'sw', 'fr'].map(lang => (
               <TouchableOpacity
                 key={lang}
@@ -296,7 +296,7 @@ const ProfileScreen = ({ navigation }) => {
               </TouchableOpacity>
             ))}
             <TouchableOpacity style={styles.closeBtn} onPress={() => setShowLangModal(false)}>
-              <Text style={{ color: 'red' }}>Cancel</Text>
+              <Text style={{ color: 'red' }}>{t('common.cancel')}</Text>
             </TouchableOpacity>
           </View>
         </View>

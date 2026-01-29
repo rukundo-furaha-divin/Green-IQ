@@ -11,6 +11,8 @@ import { useSettings } from '../context/SettingsContext';
 import { useTranslation } from 'react-i18next';
 
 
+import { API_BASE_URL, MODEL_API_URL } from '../utils/apiConfig';
+
 import { contentService } from '../services/contentService';
 
 
@@ -77,8 +79,6 @@ const ScanScreen = () => {
 
     fetchToken();
   }, []);
-
-  const SERVER_URL = 'https://green-iq.onrender.com';
 
   const handlePickImage = async () => {
     if (photos.length >= 4) {
@@ -206,14 +206,21 @@ const ScanScreen = () => {
 
       const formData = new FormData();
       let imageUri = photo.uri;
-      // Fix for Android standalone APK: ensure file:// prefix and correct type
-      if (imageUri && !imageUri.startsWith('file://')) {
-        imageUri = 'file://' + imageUri;
-      }
+
+      // Better URI handling for Android/iOS
+      const match = /\.(\w+)$/.exec(imageUri);
+      const type = match ? `image/${match[1] === 'jpg' ? 'jpeg' : match[1]}` : `image/jpeg`;
+
       formData.append('image', {
-        uri: imageUri,
-        type: 'image/jpeg',
-        name: 'image.jpg',
+        uri: Platform.OS === 'android' ? imageUri : imageUri.replace('file://', ''),
+        type: type,
+        name: photo.name || 'image.jpg',
+      });
+
+      console.log('Final FormData structure:', {
+        uri: Platform.OS === 'android' ? imageUri : imageUri.replace('file://', ''),
+        type: type,
+        name: photo.name || 'image.jpg',
       });
 
       // Step 2: Upload with authentication and enhanced error handling
@@ -222,13 +229,13 @@ const ScanScreen = () => {
 
         try {
           const response = await Promise.race([
-            fetch(`${SERVER_URL}/predict`, {
+            fetch(`${MODEL_API_URL}/predict`, {
               method: 'POST',
               body: formData,
               headers: {
                 'Accept': 'application/json',
                 'Authorization': `Bearer ${authToken}`,
-                'Content-Type': 'multipart/form-data',
+                // DO NOT set Content-Type for multipart/form-data - browser sets it automatically with boundary
               },
             }),
             new Promise((_, reject) =>

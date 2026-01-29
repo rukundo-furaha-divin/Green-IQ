@@ -195,6 +195,7 @@ export default function Rewards({ navigation }) {
                     source={{ uri: reward.rewardImage.startsWith('http') ? reward.rewardImage : `${API_BASE_URL}/${reward.rewardImage.replace(/\\/g, '/')}` }}
                     style={styles.rewardIcon}
                     resizeMode="cover"
+                    onError={(e) => console.log('Image Load Error for ' + reward.rewardName, e.nativeEvent.error)}
                   />
                 ) : (
                   <Ionicons name="gift" size={24} color="#fff" />
@@ -238,6 +239,7 @@ export default function Rewards({ navigation }) {
                       source={{ uri: selectedReward.rewardImage.startsWith('http') ? selectedReward.rewardImage : `${API_BASE_URL}/${selectedReward.rewardImage.replace(/\\/g, '/')}` }}
                       style={styles.modalImage}
                       resizeMode="cover"
+                      onError={(e) => console.log('Modal Image Load Error for ' + selectedReward.rewardName, e.nativeEvent.error)}
                     />
                   ) : (
                     <View style={styles.modalIconPlaceholder}>
@@ -401,11 +403,16 @@ const styles = StyleSheet.create({
     backgroundColor: "#00C896",
     justifyContent: "center",
     alignItems: "center",
-    overflow: "hidden",
+    marginRight: 15,
+    elevation: 2,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
   },
   rewardIcon: {
-    width: "100%",
-    height: "100%",
+    width: 50,
+    height: 50,
+    borderRadius: 25,
     resizeMode: "cover",
   },
   rewardDetails: {

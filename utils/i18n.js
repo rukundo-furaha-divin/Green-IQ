@@ -90,6 +90,7 @@ const en = {
     settings: {
         title: "Settings",
         language: "Language",
+        selectLanguage: "Select Language",
         accessibility: "Accessibility",
         highContrast: "High Contrast",
         fontScale: "Large Text",
@@ -98,6 +99,7 @@ const en = {
     },
     profile: {
         title: "Profile",
+        ecoPoints: "Eco Points",
         editProfile: "Edit Profile",
         helpCenter: "Help Center",
         inviteFriends: "Invite Friends",
@@ -194,6 +196,7 @@ const sw = {
     settings: {
         title: "Mipangilio",
         language: "Lugha",
+        selectLanguage: "Chagua Lugha",
         accessibility: "Ufikivu",
         highContrast: "Tofauti ya Juu",
         fontScale: "Maandishi Makubwa",
@@ -202,6 +205,7 @@ const sw = {
     },
     profile: {
         title: "Wasifu",
+        ecoPoints: "Alama za Eco",
         editProfile: "Hariri Wasifu",
         helpCenter: "Kituo cha Msaada",
         inviteFriends: "Alika Marafiki",
@@ -298,6 +302,7 @@ const fr = {
     settings: {
         title: "Paramètres",
         language: "Langue",
+        selectLanguage: "Sélectionner la Langue",
         accessibility: "Accessibilité",
         highContrast: "Contraste Élevé",
         fontScale: "Grand Texte",
@@ -306,6 +311,7 @@ const fr = {
     },
     profile: {
         title: "Profil",
+        ecoPoints: "Points Éco",
         editProfile: "Modifier le Profil",
         helpCenter: "Centre d'Aide",
         inviteFriends: "Inviter des Amis",

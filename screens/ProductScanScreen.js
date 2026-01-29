@@ -3,17 +3,17 @@ import {
   Text,
   Alert,
   ActivityIndicator,
-  StyleSheet,
-  Pressable,
-  Image,
-  ScrollView,
-  Dimensions,
+  TouchableOpacity,
+  SafeAreaView,
+  StatusBar,
+  Animated,
   useWindowDimensions,
-  Platform, // Added Platform
+  Platform,
+  Dimensions,
 } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { CameraView } from "expo-camera";
-import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
+import { SafeAreaProvider } from "react-native-safe-area-context";
 import { FontAwesome, Ionicons } from "@expo/vector-icons"; // Added Ionicons
 import {
   widthPercentageToDP as wp,

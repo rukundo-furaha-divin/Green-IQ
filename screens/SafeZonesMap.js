@@ -212,7 +212,7 @@ export default function SafeZonesMap({ navigation }) {
         onPress={() => setNotifVisible(!notifVisible)}
       >
         <Ionicons name="warning" size={20} color="#FF5722" />
-        <Text style={styles.alertsButtonText}>Rwanda Alerts ({rwandaClimateAlerts.length})</Text>
+        <Text style={styles.alertsButtonText}>Rwanda Alerts ({climateAlerts.length})</Text>
       </TouchableOpacity>
 
       {/* Enhanced Floating Alerts Panel */}
