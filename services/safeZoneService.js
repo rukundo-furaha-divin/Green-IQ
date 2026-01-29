@@ -29,18 +29,21 @@ class SafeZoneService {
 
       // Fetch from API (mock data for MVP)
       const safeZones = await this.fetchSafeZonesFromAPI();
-      
+
       // Calculate scores for each zone
-      const enhancedZones = safeZones.map(zone => ({
-        ...zone,
-        safetyScore: calculateZoneScore(zone),
-        scoreBreakdown: getScoreBreakdown(zone),
-        safetyLevel: getSafetyLevel(calculateZoneScore(zone))
-      }));
+      const enhancedZones = safeZones.map(zone => {
+        const score = calculateZoneScore ? calculateZoneScore(zone) : (zone.safetyScore || 80);
+        return {
+          ...zone,
+          safetyScore: score,
+          scoreBreakdown: getScoreBreakdown ? getScoreBreakdown(zone) : {},
+          safetyLevel: getSafetyLevel ? getSafetyLevel(score) : 'Good'
+        };
+      });
 
       // Cache the data
       await this.cacheData('safeZones', enhancedZones);
-      
+
       return enhancedZones;
     } catch (error) {
       console.error('Error fetching safe zones:', error);
@@ -75,7 +78,9 @@ class SafeZoneService {
             contact: '+250 123 456 789',
             operatingHours: '24/7',
             capacity: '150 people',
-            facilities: ['Medical station', 'Food distribution', 'Water purification', 'Solar charging']
+            facilities: ['Medical station', 'Food distribution', 'Water purification', 'Solar charging'],
+            district: 'Nyarugenge',
+            sector: 'Gitega'
           },
           {
             id: 2,
@@ -96,7 +101,9 @@ class SafeZoneService {
             contact: '+250 987 654 321',
             operatingHours: '24/7',
             capacity: '200 people',
-            facilities: ['Cooling systems', 'Air purification', 'Waste processing', 'Community education']
+            facilities: ['Cooling systems', 'Air purification', 'Waste processing', 'Community education'],
+            district: 'Gasabo',
+            sector: 'Kacyiru'
           },
           {
             id: 3,
@@ -117,7 +124,9 @@ class SafeZoneService {
             contact: '+250 555 123 456',
             operatingHours: '24/7',
             capacity: '120 people',
-            facilities: ['Flood protection', 'Emergency medical', 'Food storage', 'Communication hub']
+            facilities: ['Flood protection', 'Emergency medical', 'Food storage', 'Communication hub'],
+            district: 'Kicukiro',
+            sector: 'Niboye'
           }
         ]);
       }, 1000);
@@ -194,7 +203,7 @@ class SafeZoneService {
   async getNearbyRecyclingCenters(latitude, longitude, radius = 5) {
     try {
       const centers = await this.fetchRecyclingCentersFromAPI();
-      
+
       // Filter by distance (simplified calculation)
       return centers.filter(center => {
         const distance = this.calculateDistance(
@@ -279,10 +288,10 @@ class SafeZoneService {
 
       // Send to API
       await this.sendReportToAPI(report);
-      
+
       // Store locally
       await this.storeUserReport(report);
-      
+
       return { success: true, reportId: report.id };
     } catch (error) {
       console.error('Error reporting issue:', error);
@@ -400,16 +409,16 @@ class SafeZoneService {
     const R = 6371; // Earth's radius in kilometers
     const dLat = this.deg2rad(lat2 - lat1);
     const dLon = this.deg2rad(lon2 - lon1);
-    const a = 
-      Math.sin(dLat/2) * Math.sin(dLat/2) +
-      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) * 
-      Math.sin(dLon/2) * Math.sin(dLon/2);
-    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    const a =
+      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+      Math.sin(dLon / 2) * Math.sin(dLon / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     return R * c;
   }
 
   deg2rad(deg) {
-    return deg * (Math.PI/180);
+    return deg * (Math.PI / 180);
   }
 
   // Fallback data
@@ -422,7 +431,9 @@ class SafeZoneService {
         address: 'Kigali, Rwanda',
         description: 'Emergency safe zone with basic facilities.',
         safetyScore: 60,
-        status: 'active'
+        status: 'active',
+        district: 'Kigali',
+        sector: 'City'
       }
     ];
   }
@@ -434,7 +445,9 @@ class SafeZoneService {
         type: 'General Alert',
         severity: 'Low',
         text: 'General climate information available.',
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        affectedAreas: [],
+        safeZones: []
       }
     ];
   }
@@ -459,12 +472,12 @@ export const safeZoneService = new SafeZoneService();
 // Export individual functions for convenience
 export const getSafeZones = () => safeZoneService.getSafeZones();
 export const getClimateAlerts = () => safeZoneService.getClimateAlerts();
-export const getNearbyRecyclingCenters = (lat, lon, radius) => 
+export const getNearbyRecyclingCenters = (lat, lon, radius) =>
   safeZoneService.getNearbyRecyclingCenters(lat, lon, radius);
 export const getAirQualityData = (lat, lon) => safeZoneService.getAirQualityData(lat, lon);
-export const reportIssue = (zoneId, issueType, description, userLocation) => 
+export const reportIssue = (zoneId, issueType, description, userLocation) =>
   safeZoneService.reportIssue(zoneId, issueType, description, userLocation);
 export const addToFavorites = (zoneId) => safeZoneService.addToFavorites(zoneId);
 export const removeFromFavorites = (zoneId) => safeZoneService.removeFromFavorites(zoneId);
 export const getFavoriteSafeZones = () => safeZoneService.getFavoriteSafeZones();
-export const clearCache = () => safeZoneService.clearCache(); 
+export const clearCache = () => safeZoneService.clearCache();

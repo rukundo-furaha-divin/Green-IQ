@@ -7,12 +7,9 @@ import {
   StyleSheet,
   View,
   Text,
-  Image,
-  TouchableOpacity,
   ScrollView,
   Image,
   TouchableOpacity,
-  ScrollView,
   StatusBar,
   Dimensions,
   Platform,
@@ -24,6 +21,9 @@ import {
 import { Ionicons } from "@expo/vector-icons";
 import { LinearGradient } from "expo-linear-gradient";
 import * as Haptics from 'expo-haptics';
+import { useTranslation } from 'react-i18next'; // i18n
+import { useSettings } from '../context/SettingsContext'; // Settings
+
 
 const { width, height } = Dimensions.get("window");
 
@@ -55,7 +55,12 @@ const HomeScreen = ({ navigation }) => {
   const [isLoadingActivities, setIsLoadingActivities] = useState(true);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
   const [isLoadingCompanies, setIsLoadingCompanies] = useState(true);
+
   const [quickActionsVisible, setQuickActionsVisible] = useState(false);
+
+  // Settings & Localization
+  const { t } = useTranslation();
+  const { getAccessibleStyle, language } = useSettings();
 
   const scanAnim = useRef(new RNAnimated.Value(0.8)).current;
   const fadeAnim = useRef(new RNAnimated.Value(0)).current;
@@ -162,7 +167,7 @@ const HomeScreen = ({ navigation }) => {
           axios.get(`${API_BASE_URL}/userInfo`),
           axios.get(`${API_BASE_URL}/stats/recycling-growth`),
           axios.get(`${API_BASE_URL}/activities`),
-          axios.get(`${API_BASE_URL}/tips`),
+          axios.get(`${API_BASE_URL}/tips`, { params: { lang: language } }),
           axios.get(`${API_BASE_URL}/leaderboard`),
           axios.get(`${API_BASE_URL}/companyInfo`)
         ]);
@@ -217,7 +222,7 @@ const HomeScreen = ({ navigation }) => {
     }, 8000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [language]); // Add language dependency
 
   const onRefresh = async () => {
     setRefreshing(true);
@@ -227,7 +232,7 @@ const HomeScreen = ({ navigation }) => {
         axios.get(`${API_BASE_URL}/userInfo`, { timeout: 5000 }),
         axios.get(`${API_BASE_URL}/stats/recycling-growth`),
         axios.get(`${API_BASE_URL}/activities`),
-        axios.get(`${API_BASE_URL}/tips`)
+        axios.get(`${API_BASE_URL}/tips`, { params: { lang: language } })
       ]);
 
       if (results[0].status === 'fulfilled') setUser(results[0].value.data);
@@ -304,17 +309,18 @@ const HomeScreen = ({ navigation }) => {
   const progress = user?.ecoPoints ? Math.min(user.ecoPoints / 1000, 1) : 0.1;
 
   const quickActions = [
-    { icon: "scan-outline", label: "Scan", action: () => navigation.navigate("ScanChoice") },
-    { icon: "map-outline", label: "Map", action: () => navigation.navigate("Map") },
-    { icon: "qr-code-outline", label: "Purchase", action: () => navigation.navigate("Rewards") },
-    { icon: "settings-outline", label: "Settings", action: () => navigation.navigate("Profile") },
+    { icon: "scan-outline", label: t('home.quickActions.scan'), action: () => navigation.navigate("ScanChoice") },
+    { icon: "map-outline", label: t('home.quickActions.map'), action: () => navigation.navigate("Map") },
+    { icon: "qr-code-outline", label: t('home.quickActions.purchase'), action: () => navigation.navigate("Rewards") },
+    { icon: "settings-outline", label: t('home.quickActions.settings'), action: () => navigation.navigate("Profile") },
   ];
+
 
   if (isLoading) {
     return (
       <SafeAreaView style={[styles.container, styles.loadingContainer]}>
         <ActivityIndicator size="large" color="#1B5E20" />
-        <Text style={[styles.loadingText, { fontSize: responsiveSizes.bodySize }]}>Loading your eco profile...</Text>
+        <Text style={[styles.loadingText, { fontSize: responsiveSizes.bodySize }]}>{t('common.loading')}</Text>
       </SafeAreaView>
     );
   }
@@ -325,8 +331,8 @@ const HomeScreen = ({ navigation }) => {
 
       <View style={[styles.simpleTopNav, { paddingHorizontal: responsiveSizes.containerPadding }]}>
         <View style={styles.simpleTopNavLeft}>
-          <Text style={[styles.simpleTopNavGreeting, { fontSize: responsiveSizes.subtitleSize }]}>Welcome back,</Text>
-          <Text style={[styles.simpleTopNavUserName, { fontSize: responsiveSizes.userNameSize }]} numberOfLines={1} adjustsFontSizeToFit>
+          <Text style={[getAccessibleStyle(styles.simpleTopNavGreeting), { fontSize: responsiveSizes.subtitleSize }]}>{t('home.greeting')}</Text>
+          <Text style={[getAccessibleStyle(styles.simpleTopNavUserName), { fontSize: responsiveSizes.userNameSize }]} numberOfLines={1} adjustsFontSizeToFit>
             {user ? user.fullNames : "Guest User"}
           </Text>
         </View>
@@ -384,7 +390,7 @@ const HomeScreen = ({ navigation }) => {
                 <Text style={styles.statsValueMain} numberOfLines={1} adjustsFontSizeToFit>
                   {user?.ecoPoints || 0}
                 </Text>
-                <Text style={styles.statsLabelMain}>Eco Points</Text>
+                <Text style={styles.statsLabelMain}>{t('home.ecoPoints')}</Text>
               </View>
             </View>
           </View>
@@ -392,7 +398,7 @@ const HomeScreen = ({ navigation }) => {
 
         <View style={styles.activitySection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionHeaderTitle}>Recycling Growth</Text>
+            <Text style={styles.sectionHeaderTitle}>{t('home.recyclingGrowth')}</Text>
             <View style={styles.growthIndicator}>
               <Ionicons name="trending-up" size={16} color="#4CAF50" />
               <Text style={styles.growthText}>+12%</Text>
@@ -416,7 +422,7 @@ const HomeScreen = ({ navigation }) => {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Leaderboard Top 3</Text>
+            <Text style={styles.sectionTitle}>{t('home.leaderboard')}</Text>
             <TouchableOpacity onPress={() => navigation.navigate("Leaderboard")}>
               <Text style={styles.seeAllText}>View All</Text>
             </TouchableOpacity>
@@ -456,7 +462,7 @@ const HomeScreen = ({ navigation }) => {
 
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Activities</Text>
+            <Text style={styles.sectionTitle}>{t('home.recentActivities')}</Text>
             <TouchableOpacity><Text style={styles.seeAllText}>History</Text></TouchableOpacity>
           </View>
           <View style={styles.activitiesList}>
@@ -486,7 +492,7 @@ const HomeScreen = ({ navigation }) => {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Eco Tips</Text>
+          <Text style={styles.sectionTitle}>{t('home.ecoTips')}</Text>
           <TouchableOpacity style={styles.tipCard} onPress={() => handleLikeTip(ecoTipIndex)}>
             <Text style={styles.tipText}>
               {tips && tips[ecoTipIndex] ? tips[ecoTipIndex].text : "Small actions today, a greener tomorrow!"}

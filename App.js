@@ -22,6 +22,9 @@ import LocationSelectionScreen from './screens/LocationSelectionScreen';
 import Toast from 'react-native-toast-message';
 import ChatInfoScreen from './screens/ChatInfo';
 import { UserProvider } from './context/UserContext';
+import { SettingsProvider } from './context/SettingsContext';
+import { useTranslation } from 'react-i18next';
+import './utils/i18n'; // Ensure i18n is initialized
 import Dashboard from './screens/Dashboard';
 import Achievements from './screens/Achievements';
 import EcoPointsDetails from './screens/EcoPointsDetails';
@@ -41,6 +44,7 @@ const Tab = createBottomTabNavigator();
 
 // The main app experience with the bottom tab bar for citizens
 function AppTabs() {
+  const { t } = useTranslation();
   return (
     <Tab.Navigator
       screenOptions={({ route }) => ({
@@ -79,9 +83,9 @@ function AppTabs() {
         },
       })}
     >
-      <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: 'Home' }} />
+      <Tab.Screen name="HomeTab" component={HomeScreen} options={{ tabBarLabel: t('navbar.home') }} />
       <Tab.Screen name="Map" component={SafeZonesMap} options={{
-        tabBarLabel: 'Safe Zones', tabBarIcon: ({ color, size, focused }) => (
+        tabBarLabel: t('navbar.safeZones'), tabBarIcon: ({ color, size, focused }) => (
           <Ionicons name={focused ? 'shield' : 'shield-outline'} size={size} color={color} />
         )
       }} />
@@ -95,11 +99,11 @@ function AppTabs() {
             navigation.navigate('ScanChoice');
           },
         })}
-        options={{ tabBarLabel: 'Scan' }}
+        options={{ tabBarLabel: t('navbar.scan') }}
       />
-      <Tab.Screen name="RewardsTab" component={Rewards} options={{ tabBarLabel: 'Rewards' }} />
-      <Tab.Screen name="Chat" component={NearByCompanies} options={{ tabBarLabel: 'Nearby Companies' }} />
-      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: 'Profile' }} />
+      <Tab.Screen name="RewardsTab" component={Rewards} options={{ tabBarLabel: t('navbar.rewards') }} />
+      <Tab.Screen name="Chat" component={NearByCompanies} options={{ tabBarLabel: t('navbar.nearbyCompanies') }} />
+      <Tab.Screen name="Profile" component={ProfileScreen} options={{ tabBarLabel: t('navbar.profile') }} />
     </Tab.Navigator>
   );
 }
@@ -150,49 +154,51 @@ function CompanyTabs() {
 // The complete app navigation flow
 function App() {
   return (
-    <UserProvider>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <Stack.Navigator
-            initialRouteName="Welcome"
-            screenOptions={{
-              headerShown: false,
-            }}
-          >
-            {/* Auth screens */}
-            <Stack.Screen name="Welcome" component={WelcomeScreen} />
-            <Stack.Screen name="Login" component={LoginScreen} />
-            <Stack.Screen name="Register" component={SignupScreen} />
-            <Stack.Screen name="LocationSelection" component={LocationSelectionScreen} />
+    <SettingsProvider>
+      <UserProvider>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <Stack.Navigator
+              initialRouteName="Welcome"
+              screenOptions={{
+                headerShown: false,
+              }}
+            >
+              {/* Auth screens */}
+              <Stack.Screen name="Welcome" component={WelcomeScreen} />
+              <Stack.Screen name="Login" component={LoginScreen} />
+              <Stack.Screen name="Register" component={SignupScreen} />
+              <Stack.Screen name="LocationSelection" component={LocationSelectionScreen} />
 
-            {/* Main app screens (with tab bar) */}
-            <Stack.Screen name="Home" component={AppTabs} />
-            <Stack.Screen name="CompanyHome" component={CompanyTabs} />
-            <Stack.Screen name="Map" component={CollectionPoints} />
-            <Stack.Screen name="Chat" component={Chat} />
-            <Stack.Screen name="ChatInfo" component={ChatInfoScreen} />
-            <Stack.Screen name="Dashboard" component={Dashboard} />
-            {/* Challenges Removed */}
-            <Stack.Screen name="Achievements" component={Achievements} />
-            <Stack.Screen name="EcoPointsDetails" component={EcoPointsDetails} />
-            <Stack.Screen name="Leaderboard" component={Leaderboard} />
-            <Stack.Screen name="Community" component={Community} />
-            <Stack.Screen name="Rewards" component={Rewards} />
-            <Stack.Screen name="Referral" component={ReferralScreen} />
-            <Stack.Screen name="SafeZoneAlerts" component={SafeZoneAlerts} />
-            <Stack.Screen name="SafeZonesMap" component={SafeZonesMap} />
-            <Stack.Screen name="ScanChoice" component={ScanChoiceScreen} />
-            <Stack.Screen name="Scan" component={ScanScreen} />
-            <Stack.Screen name="ProductScan" component={ProductScanScreen} />
-            <Stack.Screen name="ClassificationResult" component={ClassificationResultScreen} />
-            <Stack.Screen name="EmployeeManagement" component={EmployeeManagement} />
-            <Stack.Screen name="CollectionManagement" component={CollectionManagement} />
-            <Stack.Screen name="NearByCompanies" component={NearByCompanies} />
-          </Stack.Navigator>
-        </NavigationContainer>
-      </SafeAreaProvider>
-      <Toast />
-    </UserProvider>
+              {/* Main app screens (with tab bar) */}
+              <Stack.Screen name="Home" component={AppTabs} />
+              <Stack.Screen name="CompanyHome" component={CompanyTabs} />
+              <Stack.Screen name="Map" component={CollectionPoints} />
+              <Stack.Screen name="Chat" component={Chat} />
+              <Stack.Screen name="ChatInfo" component={ChatInfoScreen} />
+              <Stack.Screen name="Dashboard" component={Dashboard} />
+              {/* Challenges Removed */}
+              <Stack.Screen name="Achievements" component={Achievements} />
+              <Stack.Screen name="EcoPointsDetails" component={EcoPointsDetails} />
+              <Stack.Screen name="Leaderboard" component={Leaderboard} />
+              <Stack.Screen name="Community" component={Community} />
+              <Stack.Screen name="Rewards" component={Rewards} />
+              <Stack.Screen name="Referral" component={ReferralScreen} />
+              <Stack.Screen name="SafeZoneAlerts" component={SafeZoneAlerts} />
+              <Stack.Screen name="SafeZonesMap" component={SafeZonesMap} />
+              <Stack.Screen name="ScanChoice" component={ScanChoiceScreen} />
+              <Stack.Screen name="Scan" component={ScanScreen} />
+              <Stack.Screen name="ProductScan" component={ProductScanScreen} />
+              <Stack.Screen name="ClassificationResult" component={ClassificationResultScreen} />
+              <Stack.Screen name="EmployeeManagement" component={EmployeeManagement} />
+              <Stack.Screen name="CollectionManagement" component={CollectionManagement} />
+              <Stack.Screen name="NearByCompanies" component={NearByCompanies} />
+            </Stack.Navigator>
+          </NavigationContainer>
+        </SafeAreaProvider>
+        <Toast />
+      </UserProvider>
+    </SettingsProvider>
   );
 }
 

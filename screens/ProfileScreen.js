@@ -12,13 +12,27 @@ import {
   ScrollView,
   Pressable,
   Alert,
+  Switch,
+  Modal,
 } from "react-native";
+import { useSettings } from "../context/SettingsContext"; // Settings Context
+import { useTranslation } from "react-i18next"; // i18n
+
 import { Ionicons } from "@expo/vector-icons";
 import { UserContext } from "../context/UserContext";
 import { LinearGradient } from "expo-linear-gradient";
 
 const ProfileScreen = ({ navigation }) => {
   const [user, setUser] = useState(null);
+  const {
+    language, changeLanguage,
+    highContrast, toggleHighContrast,
+    fontScale, updateFontScale,
+    voiceEnabled, toggleVoiceFeedback
+  } = useSettings();
+  const { t } = useTranslation();
+  const [showLangModal, setShowLangModal] = useState(false);
+
   useEffect(() => {
     const getUserinfoProfile = async () => {
       try {
@@ -160,7 +174,70 @@ const ProfileScreen = ({ navigation }) => {
           </LinearGradient>
         </View>
 
+        {/* Settings Section */}
+        <View style={styles.sectionContainer}>
+          <Text style={styles.sectionTitle}>{t('settings.title')}</Text>
+
+          {/* Language Setting */}
+          <TouchableOpacity style={styles.settingItem} onPress={() => setShowLangModal(true)}>
+            <View style={styles.settingLabelRow}>
+              <Ionicons name="globe-outline" size={24} color="#1b4332" />
+              <Text style={styles.settingText}>{t('settings.language')}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Text style={{ marginRight: 10, color: 'gray' }}>{language === 'en' ? 'English' : language === 'sw' ? 'Kiswahili' : 'Français'}</Text>
+              <Ionicons name="chevron-forward" size={20} color="gray" />
+            </View>
+          </TouchableOpacity>
+
+          {/* Accessibility Settings */}
+          <View style={styles.settingItem}>
+            <View style={styles.settingLabelRow}>
+              <Ionicons name="contrast-outline" size={24} color="#1b4332" />
+              <Text style={styles.settingText}>{t('settings.highContrast')}</Text>
+            </View>
+            <Switch
+              value={highContrast}
+              onValueChange={toggleHighContrast}
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={highContrast ? "#00C896" : "#f4f3f4"}
+            />
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingLabelRow}>
+              <Ionicons name="text-outline" size={24} color="#1b4332" />
+              <Text style={styles.settingText}>{t('settings.fontScale')}</Text>
+            </View>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity onPress={() => updateFontScale(1.0)} style={[styles.fontBtn, fontScale === 1.0 && styles.fontBtnActive]}>
+                <Text style={{ fontSize: 14 }}>A</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => updateFontScale(1.2)} style={[styles.fontBtn, fontScale === 1.2 && styles.fontBtnActive]}>
+                <Text style={{ fontSize: 18 }}>A</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={() => updateFontScale(1.4)} style={[styles.fontBtn, fontScale === 1.4 && styles.fontBtnActive]}>
+                <Text style={{ fontSize: 22 }}>A</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+
+          <View style={styles.settingItem}>
+            <View style={styles.settingLabelRow}>
+              <Ionicons name="mic-outline" size={24} color="#1b4332" />
+              <Text style={styles.settingText}>{t('settings.voiceFeedback')}</Text>
+            </View>
+            <Switch
+              value={voiceEnabled}
+              onValueChange={toggleVoiceFeedback}
+              trackColor={{ false: "#767577", true: "#81b0ff" }}
+              thumbColor={voiceEnabled ? "#00C896" : "#f4f3f4"}
+            />
+          </View>
+        </View>
+
         <View style={styles.menuContainer}>
+
           {/* <TouchableOpacity style={styles.menuItem}>
             <Ionicons name="person-outline" size={24} color="#1b4332" />
             <Text style={styles.menuItemText}>Edit Profile</Text>
@@ -192,7 +269,40 @@ const ProfileScreen = ({ navigation }) => {
           </Pressable>
         </View>
       </ScrollView>
+
+      {/* Language Modal */}
+      <Modal
+        visible={showLangModal}
+        transparent={true}
+        animationType="slide"
+        onRequestClose={() => setShowLangModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Select Language</Text>
+            {['en', 'sw', 'fr'].map(lang => (
+              <TouchableOpacity
+                key={lang}
+                style={styles.langOption}
+                onPress={() => {
+                  changeLanguage(lang);
+                  setShowLangModal(false);
+                }}
+              >
+                <Text style={[styles.langText, language === lang && { color: '#00C896', fontWeight: 'bold' }]}>
+                  {lang === 'en' ? 'English' : lang === 'sw' ? 'Kiswahili' : 'Français'}
+                </Text>
+                {language === lang && <Ionicons name="checkmark" size={24} color="#00C896" />}
+              </TouchableOpacity>
+            ))}
+            <TouchableOpacity style={styles.closeBtn} onPress={() => setShowLangModal(false)}>
+              <Text style={{ color: 'red' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
+
   );
 };
 
@@ -203,6 +313,7 @@ const styles = StyleSheet.create({
   },
   profileHeader: {
     alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 30,
     borderBottomWidth: 1,
     borderBottomColor: "#e0e0e0",
@@ -211,6 +322,7 @@ const styles = StyleSheet.create({
     width: 100,
     height: 100,
     borderRadius: 50,
+    alignSelf: "center",
   },
   userName: {
     fontSize: 22,
@@ -271,6 +383,87 @@ const styles = StyleSheet.create({
     marginLeft: 6,
     fontSize: 15,
   },
+  sectionContainer: {
+    marginTop: 20,
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: '#e0e0e0',
+  },
+  sectionTitle: {
+    paddingHorizontal: 20,
+    marginBottom: 10,
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#888',
+  },
+  settingItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  settingLabelRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  settingText: {
+    fontSize: 16,
+    marginLeft: 15,
+    color: '#333',
+  },
+  fontBtn: {
+    marginHorizontal: 5,
+    padding: 5,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 5,
+    minWidth: 30,
+    alignItems: 'center',
+  },
+  fontBtnActive: {
+    backgroundColor: '#e0f7fa',
+    borderColor: '#00C896',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalContent: {
+    width: '80%',
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  langOption: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  langText: {
+    fontSize: 18,
+  },
+  closeBtn: {
+    marginTop: 20,
+    alignItems: 'center',
+    padding: 10,
+  },
 });
+
 
 export default ProfileScreen;

@@ -6,21 +6,21 @@ import WasteClassificationModal from '../components/WasteClassificationModal';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
+import * as Speech from 'expo-speech'; // Voice
+import { useSettings } from '../context/SettingsContext';
+import { useTranslation } from 'react-i18next';
+
+
+import { contentService } from '../services/contentService';
+
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 
-const wasteControlTips = [
-  'Reduce: Buy only what you need and avoid single-use products.',
-  'Reuse: Find new uses for items instead of throwing them away.',
-  'Recycle: Sort your waste and recycle whenever possible.',
-  'Compost: Compost food scraps and biodegradable waste.',
-  'Educate: Share knowledge about waste management with others.',
-  'Participate: Join local clean-up or recycling programs.',
-];
-
 const ScanScreen = () => {
   const navigation = useNavigation();
-  const [photos, setPhotos] = useState([]); 
+  const { isConnected, addToOfflineQueue, voiceEnabled, language } = useSettings();
+  const { t } = useTranslation();
+  const [photos, setPhotos] = useState([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const [confirmed, setConfirmed] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -30,6 +30,34 @@ const ScanScreen = () => {
   const [showFallback, setShowFallback] = useState(false);
   const [fallbackFact, setFallbackFact] = useState('');
   const [token, setToken] = useState(null);
+
+  const [wasteControlTips, setWasteControlTips] = useState([
+    'Reduce: Buy only what you need and avoid single-use products.',
+    'Reuse: Find new uses for items instead of throwing them away.',
+    'Recycle: Sort your waste and recycle whenever possible.',
+  ]);
+  const [ecoFacts, setEcoFacts] = useState([
+    'Recycling one aluminum can saves enough energy to run a TV for 3 hours.',
+    'Plastic can take up to 1,000 years to decompose in landfills.',
+  ]);
+
+  useEffect(() => {
+    const fetchContent = async () => {
+      try {
+        const data = await contentService.getFacts(language);
+        if (data && data.wasteControlTips && data.wasteControlTips.length > 0) {
+          setWasteControlTips(data.wasteControlTips);
+        }
+        if (data && data.ecoFacts && data.ecoFacts.length > 0) {
+          setEcoFacts(data.ecoFacts);
+        }
+      } catch (error) {
+        console.log("Failed to fetch dynamic content, using defaults.");
+      }
+    };
+    fetchContent();
+  }, [language]);
+
 
   useEffect(() => {
     const fetchToken = async () => {
@@ -50,41 +78,33 @@ const ScanScreen = () => {
     fetchToken();
   }, []);
 
-  const SERVER_URL = 'http://5.252.53.111:10000/';
-
-  const ecoFacts = [
-    'Recycling one aluminum can saves enough energy to run a TV for 3 hours.',
-    'Plastic can take up to 1,000 years to decompose in landfills.',
-    'Recycling one ton of paper saves 17 trees and 7,000 gallons of water.',
-    'Glass is 100% recyclable and can be recycled endlessly.',
-    'Composting food waste reduces methane emissions from landfills.'
-  ];
+  const SERVER_URL = 'https://green-iq.onrender.com';
 
   const handlePickImage = async () => {
     if (photos.length >= 4) {
       Alert.alert('Limit reached', 'You can only select up to 4 images.');
       return;
     }
-    
+
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
         Alert.alert('Permission required', 'Please grant media library access to pick images.');
         return;
       }
-      
+
       setIsProcessing(true);
-      
+
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsMultipleSelection: false, 
+        allowsMultipleSelection: false,
         quality: 0.8,
         allowsEditing: false,
-        exif: false, 
+        exif: false,
       });
-      
+
       setIsProcessing(false);
-      
+
       if (!result.canceled && result.assets && result.assets.length > 0) {
         const asset = result.assets[0];
         console.log('Selected image asset:', {
@@ -95,23 +115,23 @@ const ScanScreen = () => {
           fileName: asset.fileName,
           type: asset.type
         });
-        
+
         if (!asset.uri) {
           Alert.alert('Error', 'Invalid image selected');
           return;
         }
-        
+
         if (!asset.uri.startsWith('file://') && !asset.uri.startsWith('content://')) {
           Alert.alert('Error', 'Invalid image URI format');
           return;
         }
-        
+
         const photoObj = {
           uri: asset.uri,
           name: asset.fileName || `photo_${Date.now()}.jpg`,
           type: asset.type || 'image/jpeg'
         };
-        
+
         setPhotos(prev => [...prev, photoObj]);
       }
     } catch (e) {
@@ -136,9 +156,30 @@ const ScanScreen = () => {
 
     setUploading(true);
     setUploadProgress(0);
-    
+
+    setUploading(true);
+    setUploadProgress(0);
+
+    // Offline Check
+    if (!isConnected) {
+      setTimeout(async () => {
+        setUploading(false);
+        setUploadProgress(100);
+        await addToOfflineQueue({
+          type: 'scan',
+          photos: photos.map(p => p.uri),
+          date: new Date().toISOString()
+        });
+        Alert.alert(t('common.noInternet'), t('common.savedForLater'));
+        // Reset screen after saving
+        resetScreen();
+      }, 1000);
+      return;
+    }
+
     try {
       // Step 1: Retrieve authentication token from AsyncStorage
+
       let authToken;
       try {
         authToken = await AsyncStorage.getItem('token');
@@ -151,7 +192,7 @@ const ScanScreen = () => {
         setUploading(false);
         setUploadProgress(0);
         Alert.alert(
-          'Authentication Error', 
+          'Authentication Error',
           'Unable to retrieve authentication token. Please log in again.',
           [
             { text: 'Go to Login', onPress: () => navigation.navigate('Login') },
@@ -162,7 +203,7 @@ const ScanScreen = () => {
       }
 
       const photo = photos[0];
-      
+
       const formData = new FormData();
       let imageUri = photo.uri;
       // Fix for Android standalone APK: ensure file:// prefix and correct type
@@ -178,7 +219,7 @@ const ScanScreen = () => {
       // Step 2: Upload with authentication and enhanced error handling
       const uploadWithRetry = async (retryCount = 0) => {
         const maxRetries = 2;
-        
+
         try {
           const response = await Promise.race([
             fetch(`${SERVER_URL}/predict`, {
@@ -190,7 +231,7 @@ const ScanScreen = () => {
                 'Content-Type': 'multipart/form-data',
               },
             }),
-            new Promise((_, reject) => 
+            new Promise((_, reject) =>
               setTimeout(() => reject(new Error('Request timeout')), 90000)
             )
           ]);
@@ -231,12 +272,12 @@ const ScanScreen = () => {
 
       setUploading(false);
       setUploadProgress(100);
-      
+
       if (data && data.success !== false && (data.prediction || data.label)) {
         const result = {
           label: data.prediction || data.label,
           confidence: parseFloat(data.confidence || 0),
-          description: (data.prediction || data.label) === 'biodegradable' 
+          description: (data.prediction || data.label) === 'biodegradable'
             ? 'Easily breaks down naturally. Good for composting.'
             : 'Does not break down easily. Should be disposed of carefully.',
           recyclable: (data.prediction || data.label) !== 'biodegradable',
@@ -248,21 +289,29 @@ const ScanScreen = () => {
             : ['plastic bag', 'styrofoam', 'metal can'],
           image: photo.uri,
         };
+
+        // Voice Feedback
+        if (voiceEnabled) {
+          const speechText = `${result.label.replace('_', ' ')}. ${result.description}`;
+          Speech.speak(speechText);
+        }
+
         navigation.navigate('ClassificationResult', { result });
       } else {
+
         setFallbackFact(ecoFacts[Math.floor(Math.random() * ecoFacts.length)]);
         setShowFallback(true);
       }
     } catch (error) {
       setUploading(false);
       setUploadProgress(0);
-      
+
       console.error('Upload error:', error);
-      
+
       let errorMessage = 'Failed to classify image. Please check your connection and try again.';
       let showRetry = true;
       let showLogin = false;
-      
+
       if (error.message.includes('Authentication failed') || error.message.includes('Authentication token not found')) {
         errorMessage = 'Your session has expired. Please log in again.';
         showRetry = false;
@@ -286,7 +335,7 @@ const ScanScreen = () => {
         errorMessage = error.message;
         showRetry = true;
       }
-      
+
       const alertButtons = [];
       if (showRetry) {
         alertButtons.push({ text: 'Try Again', onPress: () => handleUpload() });
@@ -295,7 +344,7 @@ const ScanScreen = () => {
         alertButtons.push({ text: 'Go to Login', onPress: () => navigation.navigate('Login') });
       }
       alertButtons.push({ text: 'Cancel', style: 'cancel' });
-      
+
       Alert.alert('Upload Error', errorMessage, alertButtons);
     }
   };
@@ -345,12 +394,13 @@ const ScanScreen = () => {
         description: 'This type of waste does not break down easily. It should be recycled or disposed of carefully to protect the environment.'
       }
     ];
-    
+
     return (
       <ScrollView contentContainerStyle={styles.center}>
         <Ionicons name="leaf" size={60} color="#2d6a4f" style={{ marginBottom: 16 }} />
-        <Text style={styles.fallbackTitle}>Scan Complete!</Text>
+        <Text style={styles.fallbackTitle}>{t('scan.fallbackTitle')}</Text>
         <Text style={styles.fallbackSubtitle}>
+
           Here are some tips and facts for your waste items:
         </Text>
         {photos.map((photo, idx) => {
@@ -366,11 +416,13 @@ const ScanScreen = () => {
           );
         })}
         <TouchableOpacity style={styles.claimButton} onPress={handleClaimEcoPoints}>
-          <Text style={styles.claimButtonText}>Claim EcoPoints (+{photos.length * 10})</Text>
+          <Text style={styles.claimButtonText}>{t('scan.claimPoints')} (+{photos.length * 10})</Text>
         </TouchableOpacity>
+
         <TouchableOpacity style={styles.secondaryButton} onPress={resetScreen}>
-          <Text style={styles.secondaryButtonText}>Scan Again</Text>
+          <Text style={styles.secondaryButtonText}>{t('scan.scanAgain')}</Text>
         </TouchableOpacity>
+
       </ScrollView>
     );
   }
@@ -381,7 +433,8 @@ const ScanScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton} accessibilityLabel="Go back">
           <Ionicons name="arrow-back" size={28} color="#2d6a4f" />
         </TouchableOpacity>
-        <Text style={styles.topNavTitle}>Scan Waste</Text>
+        <Text style={styles.topNavTitle}>{t('scan.title')}</Text>
+
       </View>
       {photos.length > 0 && (
         <View style={styles.galleryContainer}>
@@ -389,9 +442,9 @@ const ScanScreen = () => {
             {photos.map((photo, idx) => (
               <View key={`${photo.uri}-${idx}`} style={styles.thumbnailWrapper}>
                 <Image source={{ uri: photo.uri }} style={styles.thumbnail} />
-                <TouchableOpacity 
-                  style={styles.removeButton} 
-                  onPress={() => handleRemovePhoto(idx)} 
+                <TouchableOpacity
+                  style={styles.removeButton}
+                  onPress={() => handleRemovePhoto(idx)}
                   accessibilityLabel="Remove photo"
                 >
                   <Ionicons name="close-circle" size={22} color="#e74c3c" />
@@ -401,7 +454,7 @@ const ScanScreen = () => {
           </ScrollView>
         </View>
       )}
-      
+
       {!confirmed && (
         <TouchableOpacity
           style={styles.captureButton}
@@ -416,24 +469,25 @@ const ScanScreen = () => {
           )}
         </TouchableOpacity>
       )}
-      
+
       {photos.length > 0 && !confirmed && (
-        <TouchableOpacity 
-          style={styles.confirmButton} 
-          onPress={handleConfirm} 
+        <TouchableOpacity
+          style={styles.confirmButton}
+          onPress={handleConfirm}
           accessibilityLabel="Confirm photos"
         >
           <Ionicons name="checkmark" size={24} color="#fff" />
-          <Text style={styles.buttonText}>Confirm ({photos.length})</Text>
+          <Text style={styles.buttonText}>{t('scan.confirm')} ({photos.length})</Text>
+
         </TouchableOpacity>
       )}
 
       {confirmed && (
         <View style={styles.uploadContainer}>
-          <TouchableOpacity 
-            style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]} 
-            onPress={handleUpload} 
-            disabled={uploading} 
+          <TouchableOpacity
+            style={[styles.uploadButton, uploading && styles.uploadButtonDisabled]}
+            onPress={handleUpload}
+            disabled={uploading}
             accessibilityLabel="Upload photos"
           >
             {uploading ? (
@@ -441,23 +495,25 @@ const ScanScreen = () => {
             ) : (
               <>
                 <Ionicons name="cloud-upload" size={24} color="#fff" />
-                <Text style={styles.buttonText}>Upload ({photos.length})</Text>
+                <Text style={styles.buttonText}>{t('scan.upload')} ({photos.length})</Text>
+
               </>
             )}
           </TouchableOpacity>
-          
+
           {uploading && (
             <View style={styles.progressContainer}>
-              <Text style={styles.uploadProgress}>Classifying image...</Text>
+              <Text style={styles.uploadProgress}>{t('scan.analyzing')}</Text>
+
               <View style={styles.progressBar}>
                 <View style={[styles.progressFill, { width: `${uploadProgress}%` }]} />
               </View>
             </View>
           )}
-          
+
           {!uploading && confirmed && (
-            <TouchableOpacity 
-              style={styles.secondaryButton} 
+            <TouchableOpacity
+              style={styles.secondaryButton}
               onPress={resetScreen}
               accessibilityLabel="Reset"
             >

@@ -14,6 +14,7 @@ import * as Clipboard from "expo-clipboard";
 import Toast from "react-native-toast-message";
 import axios from "axios";
 import { API_BASE_URL } from '../utils/apiConfig';
+import { useTranslation } from 'react-i18next';
 
 export default function ReferralScreen({ navigation, route }) {
   const [user, setUser] = useState(null);
@@ -58,6 +59,8 @@ export default function ReferralScreen({ navigation, route }) {
     }
   };
 
+  const { t } = useTranslation();
+
   return (
     <View style={{ flex: 1, backgroundColor: "#f8fffe" }}>
       {/* Top bar with back arrow */}
@@ -87,7 +90,7 @@ export default function ReferralScreen({ navigation, route }) {
               letterSpacing: 1,
             }}
           >
-            Invite Friends
+            {t('referral.title')}
           </Text>
         </View>
       </View>
@@ -105,10 +108,10 @@ export default function ReferralScreen({ navigation, route }) {
         />
         <View style={{ marginLeft: 14 }}>
           <Text style={styles.userName}>
-            {user ? user.fullNames : "Loading..."}
+            {user ? user.fullNames : t('common.loading')}
           </Text>
           <Text style={styles.userEmail}>
-            {user ? user.email : "Loading..."}
+            {user ? user.email : t('common.loading')}
           </Text>
           <View
             style={{ flexDirection: "row", alignItems: "center", marginTop: 4 }}
@@ -120,7 +123,7 @@ export default function ReferralScreen({ navigation, route }) {
               style={{ marginRight: 6 }}
             />
             <Text style={styles.ecoPoints}>
-              {user ? user.points : "Loading..."} Eco Points
+              {user ? user.points : "..."} {t('home.ecoPoints')}
             </Text>
           </View>
         </View>
@@ -139,19 +142,18 @@ export default function ReferralScreen({ navigation, route }) {
             color="#1B5E20"
             style={{ marginRight: 10 }}
           />
-          <Text style={styles.title}>Invite Friends</Text>
+          <Text style={styles.title}>{t('referral.title')}</Text>
         </View>
         <Text style={styles.desc}>
-          Get 100 points for each friend you invite and creates an account. Use
-          your referral code to invite your friend.
+          {t('referral.shareMessage', { code: "" }).split(':')[0]}...
         </Text>
         <View style={styles.codeRow}>
           <Text style={styles.code}>
-            {user ? user.referralCode : "Loading..."}
+            {user ? user.referralCode : "..."}
           </Text>
           <TouchableOpacity onPress={handleCopy} style={styles.copyButton}>
             <Ionicons name="copy-outline" size={20} color="#00C896" />
-            <Text style={styles.copyText}>Copy</Text>
+            <Text style={styles.copyText}>{t('referral.copyCode')}</Text>
           </TouchableOpacity>
         </View>
         <TouchableOpacity onPress={handleShare} style={styles.shareButton}>
@@ -161,7 +163,7 @@ export default function ReferralScreen({ navigation, route }) {
             color="#fff"
             style={{ marginRight: 8 }}
           />
-          <Text style={styles.shareText}>Share link</Text>
+          <Text style={styles.shareText}>{t('referral.shareCode')}</Text>
         </TouchableOpacity>
       </View>
     </View>

@@ -1,230 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Modal, Linking, TextInput, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Modal, Linking, TextInput, ScrollView, Alert, Image, ActivityIndicator } from 'react-native';
 import MapView, { Marker, Callout, PROVIDER_GOOGLE, Circle } from 'react-native-maps';
 import { Ionicons } from '@expo/vector-icons';
 import * as Location from 'expo-location';
-
-// Enhanced Rwanda-specific safe zones with comprehensive data
-const rwandaSafeZones = [
-  { 
-    id: 1, 
-    name: 'Kigali Convention Center Safe Zone', 
-    coords: { latitude: -1.9501, longitude: 30.0588 }, 
-    address: 'KG 2 Roundabout, Kigali', 
-    description: 'Major convention center with solar power and emergency facilities.',
-    safetyScore: 95,
-    climateRisks: ['Low flood risk', 'Low heat risk'],
-    greenInfrastructure: ['Solar panels', 'Green roof', 'Rainwater harvesting', 'Waste-to-energy'],
-    recyclingCenters: 8,
-    airQuality: 'Excellent',
-    emergencyCapacity: 500,
-    lastUpdated: '2024-01-15',
-    communityRating: 4.8,
-    features: ['Emergency shelter', 'Medical aid', 'Food storage', 'Communication hub', 'Conference facilities'],
-    district: 'Kigali City',
-    sector: 'Nyarugenge',
-    manager: 'Jean Pierre Nkurunziza',
-    contact: '+250 788 123 456',
-    operatingHours: '24/7',
-    capacity: '500 people',
-    facilities: ['Medical station', 'Food distribution', 'Water purification', 'Solar charging', 'WiFi', 'Conference rooms']
-  },
-  { 
-    id: 2, 
-    name: 'Amahoro Stadium Climate Refuge', 
-    coords: { latitude: -1.9439, longitude: 30.0594 }, 
-    address: 'Remera, Kigali', 
-    description: 'Large stadium with extensive emergency facilities and green infrastructure.',
-    safetyScore: 92,
-    climateRisks: ['Low flood risk', 'Low heat risk'],
-    greenInfrastructure: ['Solar panels', 'Rainwater harvesting', 'Biodiversity garden', 'Waste processing'],
-    recyclingCenters: 6,
-    airQuality: 'Excellent',
-    emergencyCapacity: 1000,
-    lastUpdated: '2024-01-20',
-    communityRating: 4.6,
-    features: ['Mass shelter', 'Medical center', 'Food distribution', 'Sports facilities', 'Parking'],
-    district: 'Kigali City',
-    sector: 'Gasabo',
-    manager: 'Marie Claire Uwimana',
-    contact: '+250 789 234 567',
-    operatingHours: '24/7',
-    capacity: '1000 people',
-    facilities: ['Large medical center', 'Mass food distribution', 'Water storage', 'Solar power', 'Parking for 500 vehicles']
-  },
-  { 
-    id: 3, 
-    name: 'Kigali Genocide Memorial Safe Zone', 
-    coords: { latitude: -1.9486, longitude: 30.0556 }, 
-    address: 'KG 14 Ave, Kigali', 
-    description: 'Memorial site with climate-resilient facilities and community support.',
-    safetyScore: 88,
-    climateRisks: ['Low flood risk', 'Moderate heat risk'],
-    greenInfrastructure: ['Solar panels', 'Memorial gardens', 'Water conservation', 'Green spaces'],
-    recyclingCenters: 4,
-    airQuality: 'Good',
-    emergencyCapacity: 200,
-    lastUpdated: '2024-01-18',
-    communityRating: 4.7,
-    features: ['Emergency shelter', 'Counseling services', 'Medical aid', 'Community support', 'Educational facilities'],
-    district: 'Kigali City',
-    sector: 'Gasabo',
-    manager: 'Paul Kagame',
-    contact: '+250 790 345 678',
-    operatingHours: '24/7',
-    capacity: '200 people',
-    facilities: ['Medical station', 'Counseling center', 'Food distribution', 'Water purification', 'Educational materials']
-  },
-  { 
-    id: 4, 
-    name: 'Kigali Heights Mall Safe Zone', 
-    coords: { latitude: -1.9447, longitude: 30.0619 }, 
-    address: 'KG 7 Ave, Kigali', 
-    description: 'Modern mall with sustainable infrastructure and emergency facilities.',
-    safetyScore: 85,
-    climateRisks: ['Low flood risk', 'Low heat risk'],
-    greenInfrastructure: ['Solar panels', 'Green building design', 'Waste management', 'Energy efficiency'],
-    recyclingCenters: 5,
-    airQuality: 'Good',
-    emergencyCapacity: 300,
-    lastUpdated: '2024-01-22',
-    communityRating: 4.3,
-    features: ['Shopping facilities', 'Medical aid', 'Food courts', 'Parking', 'Security'],
-    district: 'Kigali City',
-    sector: 'Nyarugenge',
-    manager: 'Chantal Uwera',
-    contact: '+250 791 456 789',
-    operatingHours: '24/7',
-    capacity: '300 people',
-    facilities: ['Medical station', 'Food courts', 'Water supply', 'Security', 'Parking', 'WiFi']
-  },
-  { 
-    id: 5, 
-    name: 'Kigali Innovation City Hub', 
-    coords: { latitude: -1.9367, longitude: 30.0600 }, 
-    address: 'KG 9 Ave, Kigali', 
-    description: 'Innovation hub with cutting-edge green technology and emergency response.',
-    safetyScore: 90,
-    climateRisks: ['Low flood risk', 'Low heat risk'],
-    greenInfrastructure: ['Smart solar systems', 'IoT monitoring', 'Waste-to-energy', 'Green building'],
-    recyclingCenters: 7,
-    airQuality: 'Excellent',
-    emergencyCapacity: 250,
-    lastUpdated: '2024-01-19',
-    communityRating: 4.5,
-    features: ['Tech facilities', 'Emergency shelter', 'Medical aid', 'Innovation labs', 'Conference rooms'],
-    district: 'Kigali City',
-    sector: 'Gasabo',
-    manager: 'Eric Ndayisaba',
-    contact: '+250 792 567 890',
-    operatingHours: '24/7',
-    capacity: '250 people',
-    facilities: ['Medical station', 'Tech labs', 'Conference facilities', 'Water purification', 'Smart monitoring']
-  },
-  { 
-    id: 6, 
-    name: 'Kigali Public Library Safe Zone', 
-    coords: { latitude: -1.9497, longitude: 30.0575 }, 
-    address: 'KG 6 Ave, Kigali', 
-    description: 'Public library with educational facilities and climate resilience.',
-    safetyScore: 82,
-    climateRisks: ['Low flood risk', 'Moderate heat risk'],
-    greenInfrastructure: ['Solar panels', 'Green spaces', 'Water conservation', 'Natural ventilation'],
-    recyclingCenters: 3,
-    airQuality: 'Good',
-    emergencyCapacity: 150,
-    lastUpdated: '2024-01-21',
-    communityRating: 4.2,
-    features: ['Educational facilities', 'Emergency shelter', 'Medical aid', 'Study spaces', 'Internet access'],
-    district: 'Kigali City',
-    sector: 'Nyarugenge',
-    manager: 'Grace Mukamana',
-    contact: '+250 793 678 901',
-    operatingHours: '24/7',
-    capacity: '150 people',
-    facilities: ['Medical station', 'Library facilities', 'Study rooms', 'Water supply', 'Internet access']
-  },
-  { 
-    id: 7, 
-    name: 'Kigali Business Center', 
-    coords: { latitude: -1.9425, longitude: 30.0583 }, 
-    address: 'KG 5 Ave, Kigali', 
-    description: 'Business center with modern facilities and emergency response capabilities.',
-    safetyScore: 87,
-    climateRisks: ['Low flood risk', 'Low heat risk'],
-    greenInfrastructure: ['Solar panels', 'Energy efficiency', 'Waste management', 'Green building'],
-    recyclingCenters: 4,
-    airQuality: 'Good',
-    emergencyCapacity: 180,
-    lastUpdated: '2024-01-23',
-    communityRating: 4.4,
-    features: ['Business facilities', 'Emergency shelter', 'Medical aid', 'Meeting rooms', 'Security'],
-    district: 'Kigali City',
-    sector: 'Gasabo',
-    manager: 'David Nshimiyimana',
-    contact: '+250 794 789 012',
-    operatingHours: '24/7',
-    capacity: '180 people',
-    facilities: ['Medical station', 'Business facilities', 'Meeting rooms', 'Water supply', 'Security', 'WiFi']
-  },
-  { 
-    id: 8, 
-    name: 'Kigali Community Center', 
-    coords: { latitude: -1.9472, longitude: 30.0625 }, 
-    address: 'KG 8 Ave, Kigali', 
-    description: 'Community center focused on local support and climate resilience.',
-    safetyScore: 80,
-    climateRisks: ['Low flood risk', 'Moderate heat risk'],
-    greenInfrastructure: ['Community gardens', 'Solar panels', 'Water harvesting', 'Green spaces'],
-    recyclingCenters: 2,
-    airQuality: 'Good',
-    emergencyCapacity: 120,
-    lastUpdated: '2024-01-24',
-    communityRating: 4.6,
-    features: ['Community facilities', 'Emergency shelter', 'Medical aid', 'Local support', 'Educational programs'],
-    district: 'Kigali City',
-    sector: 'Kicukiro',
-    manager: 'Ange Uwimana',
-    contact: '+250 795 890 123',
-    operatingHours: '24/7',
-    capacity: '120 people',
-    facilities: ['Medical station', 'Community rooms', 'Educational facilities', 'Water supply', 'Local support']
-  }
-];
-
-// Rwanda-specific climate alerts
-const rwandaClimateAlerts = [
-  { 
-    id: 1, 
-    type: 'Rainy Season Alert', 
-    severity: 'Moderate',
-    text: 'Heavy rainfall expected in Kigali. Safe zones with proper drainage are open.',
-    affectedAreas: ['Kigali City', 'Eastern Province'],
-    duration: '48 hours',
-    icon: 'water-outline',
-    color: '#2196F3'
-  },
-  { 
-    id: 2, 
-    type: 'Heatwave Alert', 
-    severity: 'Low',
-    text: 'High temperatures expected. Visit cooling centers and stay hydrated.',
-    affectedAreas: ['All provinces'],
-    duration: '24 hours',
-    icon: 'thermometer-outline',
-    color: '#FF5722'
-  },
-  { 
-    id: 3, 
-    type: 'Waste Management Alert', 
-    severity: 'Low',
-    text: 'Recycling centers operating normally. Continue proper waste disposal.',
-    affectedAreas: ['Kigali City'],
-    duration: '12 hours',
-    icon: 'trash-outline',
-    color: '#795548'
-  }
-];
+import { getSafeZones, getClimateAlerts } from '../services/safeZoneService';
 
 export default function SafeZonesMap({ navigation }) {
   const mapRef = useRef(null);
@@ -237,6 +16,11 @@ export default function SafeZonesMap({ navigation }) {
   const [showFilters, setShowFilters] = useState(false);
   const [mapType, setMapType] = useState('standard');
 
+  // Real data state
+  const [safeZones, setSafeZones] = useState([]);
+  const [climateAlerts, setClimateAlerts] = useState([]);
+  const [loading, setLoading] = useState(true);
+
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
@@ -246,6 +30,20 @@ export default function SafeZonesMap({ navigation }) {
           latitude: location.coords.latitude,
           longitude: location.coords.longitude,
         });
+      }
+
+      // Fetch real data
+      try {
+        const [zones, alerts] = await Promise.all([
+          getSafeZones(),
+          getClimateAlerts()
+        ]);
+        setSafeZones(zones || []);
+        setClimateAlerts(alerts || []);
+      } catch (error) {
+        console.error("Failed to load map data", error);
+      } finally {
+        setLoading(false);
       }
     })();
   }, []);
@@ -259,21 +57,21 @@ export default function SafeZonesMap({ navigation }) {
   };
 
   // Filter safe zones
-  const filteredZones = rwandaSafeZones.filter(zone => {
-    const matchesSearch = search.trim().length === 0 || 
-      zone.name.toLowerCase().includes(search.toLowerCase()) || 
+  const filteredZones = safeZones.filter(zone => {
+    const matchesSearch = search.trim().length === 0 ||
+      zone.name.toLowerCase().includes(search.toLowerCase()) ||
       zone.address.toLowerCase().includes(search.toLowerCase()) ||
-      zone.district.toLowerCase().includes(search.toLowerCase());
-    
+      (zone.district && zone.district.toLowerCase().includes(search.toLowerCase()));
+
     let matchesFilter = true;
     if (filterType === 'high-score') {
       matchesFilter = zone.safetyScore >= 85;
     } else if (filterType === 'low-risk') {
-      matchesFilter = zone.climateRisks.some(risk => risk.includes('Low'));
+      matchesFilter = zone.climateRisks && zone.climateRisks.some(risk => risk.includes('Low'));
     } else if (filterType === 'kigali') {
       matchesFilter = zone.district === 'Kigali City';
     }
-    
+
     return matchesSearch && matchesFilter;
   });
 
@@ -302,8 +100,8 @@ export default function SafeZonesMap({ navigation }) {
       'Would you like to report an issue with this safe zone?',
       [
         { text: 'Cancel', style: 'cancel' },
-        { 
-          text: 'Report', 
+        {
+          text: 'Report',
           onPress: () => {
             Alert.alert('Thank you', 'Your report has been submitted. We will investigate the issue.');
           }
@@ -350,19 +148,19 @@ export default function SafeZonesMap({ navigation }) {
             placeholderTextColor="#888"
           />
         </View>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.filterButton}
           onPress={() => setShowFilters(!showFilters)}
         >
           <Ionicons name="filter" size={20} color="#1B5E20" />
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.mapTypeButton}
           onPress={toggleMapType}
         >
           <Ionicons name={mapType === 'standard' ? 'map' : 'map-outline'} size={20} color="#1B5E20" />
         </TouchableOpacity>
-        <TouchableOpacity 
+        <TouchableOpacity
           style={styles.mapTypeButton}
           onPress={toggleMapType}
         >
@@ -374,31 +172,31 @@ export default function SafeZonesMap({ navigation }) {
       {showFilters && (
         <View style={styles.filterContainer}>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterOption, filterType === 'all' && styles.filterOptionActive]}
               onPress={() => setFilterType('all')}
             >
               <Text style={[styles.filterText, filterType === 'all' && styles.filterTextActive]}>All Zones</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterOption, filterType === 'high-score' && styles.filterOptionActive]}
               onPress={() => setFilterType('high-score')}
             >
               <Text style={[styles.filterText, filterType === 'high-score' && styles.filterTextActive]}>High Score (85+)</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterOption, filterType === 'low-risk' && styles.filterOptionActive]}
               onPress={() => setFilterType('low-risk')}
             >
               <Text style={[styles.filterText, filterType === 'low-risk' && styles.filterTextActive]}>Low Risk</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterOption, filterType === 'kigali' && styles.filterOptionActive]}
               onPress={() => setFilterType('kigali')}
             >
               <Text style={[styles.filterText, filterType === 'kigali' && styles.filterTextActive]}>Kigali City</Text>
             </TouchableOpacity>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={[styles.filterOption, filterType === 'kigali' && styles.filterOptionActive]}
               onPress={() => setFilterType('kigali')}
             >
@@ -409,7 +207,7 @@ export default function SafeZonesMap({ navigation }) {
       )}
 
       {/* Enhanced Climate Alerts Panel */}
-      <TouchableOpacity 
+      <TouchableOpacity
         style={styles.alertsButton}
         onPress={() => setNotifVisible(!notifVisible)}
       >
@@ -428,7 +226,7 @@ export default function SafeZonesMap({ navigation }) {
             </TouchableOpacity>
           </View>
           <ScrollView style={styles.alertsList}>
-            {rwandaClimateAlerts.map(alert => (
+            {climateAlerts.map(alert => (
               <View key={alert.id} style={[styles.alertItem, { borderLeftColor: alert.color }]}>
                 <View style={styles.alertHeader}>
                   <Ionicons name={alert.icon} size={16} color={alert.color} />
@@ -436,7 +234,7 @@ export default function SafeZonesMap({ navigation }) {
                   <Text style={[styles.alertSeverity, { color: alert.color }]}>{alert.severity}</Text>
                 </View>
                 <Text style={styles.alertText}>{alert.text}</Text>
-                <Text style={styles.alertDetails}>Affected: {alert.affectedAreas.join(', ')} • Duration: {alert.duration}</Text>
+                <Text style={styles.alertDetails}>Affected: {alert.affectedAreas ? alert.affectedAreas.join(', ') : 'N/A'} • Duration: {alert.duration}</Text>
               </View>
             ))}
           </ScrollView>

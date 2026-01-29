@@ -9,11 +9,12 @@ import {
   ScrollView,
   Dimensions,
   useWindowDimensions,
+  Platform, // Added Platform
 } from "react-native";
 import React, { useState, useEffect, useRef } from "react";
 import { CameraView } from "expo-camera";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { FontAwesome } from "@expo/vector-icons";
+import { FontAwesome, Ionicons } from "@expo/vector-icons"; // Added Ionicons
 import {
   widthPercentageToDP as wp,
   heightPercentageToDP as hp,
@@ -21,8 +22,10 @@ import {
 import { getProductGrades } from "../utils/ProductGrade";
 import NoProductImage from "../assets/NoProductImage.png";
 import axios from "axios";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 import { API_BASE_URL } from '../utils/apiConfig';
-import { deepSeekRecommendation } from "../utils/DeepSeekAnalysis";
+import { fetchProductFromOFF, getEcoAnalysis } from "../services/productService";
 import { cleanText } from "../utils/cleanText";
 import { extractYoutubeUrl } from "../utils/extractYoutubeURL";
 import { WebView } from "react-native-webview";
@@ -31,7 +34,7 @@ import Toast from "react-native-toast-message";
 
 const { width: screenWidth, height: screenHeight } = Dimensions.get("window");
 
-const ProductScanScreen = () => {
+const ProductScanScreen = ({ navigation }) => {
   const [hasPermission, setHasPermission] = useState(null);
   const [loading, setLoading] = useState(false);
   const [product, setProduct] = useState(null);
@@ -143,14 +146,10 @@ const ProductScanScreen = () => {
       setCameraClicked(false);
       setLoading(true);
 
-      const resp = await retryFetch(`https://world.openfoodfacts.org/api/v0/product/${data}.json`, {}, { retries: 1, baseDelay: 600 });
-      if (!resp.ok) {
-        const text = await resp.text().catch(() => null);
-        throw new Error(`OpenFoodFacts HTTP ${resp.status}: ${text}`);
-      }
-      const json = await resp.json();
+      // 1. Fetch from OpenFoodFacts
+      const offData = await fetchProductFromOFF(data);
 
-      if (json.status !== 1) {
+      if (!offData) {
         scannedCache.current.delete(data);
         Toast.show({
           type: 'info',
@@ -162,10 +161,13 @@ const ProductScanScreen = () => {
         return;
       }
 
-      const gradedProduct = await getProductGrades([json.product]);
+      // 2. Local State update for UI
+      const gradedProduct = await getProductGrades([offData.product]);
       if (isMounted.current) setProduct(gradedProduct[0]);
 
-      const barcodeKey = gradedProduct[0].code || data;
+      const barcodeKey = data;
+
+      // 3. check cache or call backend
       if (deepSeekCache.current.has(barcodeKey)) {
         const cached = deepSeekCache.current.get(barcodeKey);
         if (isMounted.current) {
@@ -173,32 +175,29 @@ const ProductScanScreen = () => {
           setVideoId(cached.videoId || "");
         }
       } else {
-        const deepSeekAnalysis = await retryFn(async () => {
-          if (!process.env.DEEPSEEK_API_KEY) {
-            console.warn("DeepSeek API key missing in environment");
-            // Return fallback if key is missing to prevent crash
-            return "Environmental analysis unavailable (Missing API Key). Please recycle responsibly.";
-          }
-          return deepSeekRecommendation(json.product);
-        }, { retries: 1, baseDelay: 800 });
+        // 4. Call Backend for Analysis
+        const analysisResult = await getEcoAnalysis(offData);
+
         let youtubeId = "";
         try {
-          youtubeId = await extractYoutubeUrl(deepSeekAnalysis);
+          youtubeId = await extractYoutubeUrl(analysisResult);
         } catch {
           youtubeId = "";
         }
-        const cleaned = await cleanText(deepSeekAnalysis);
+
+        const cleaned = await cleanText(analysisResult);
+
         deepSeekCache.current.set(barcodeKey, { analysis: cleaned, videoId: youtubeId || "" });
+
         if (isMounted.current) {
           setAnalysis(cleaned);
           setVideoId(youtubeId || "");
         }
       }
 
-      await handleScanProduct(gradedProduct[0].code);
     } catch (error) {
       let msg = "An error occurred while scanning";
-      if (error.message.includes('Network') || error.message.includes('fetch')) {
+      if (error.message && (error.message.includes('Network') || error.message.includes('fetch'))) {
         msg = "Network error. Please check your internet connection and try again.";
       } else if (error?.response?.data?.message) {
         msg = error.response.data.message;
@@ -325,6 +324,15 @@ const ProductScanScreen = () => {
           </View>
         )}
 
+
+
+        <TouchableOpacity
+          style={styles.backButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="arrow-back" size={24} color="#fff" />
+        </TouchableOpacity>
+
         <ScrollView style={styles.scrollView} contentContainerStyle={[styles.scrollContent, isTablet && styles.scrollContentTablet]} showsVerticalScrollIndicator={false}>
           {loading && (
             <View style={styles.loadingContainer}>
@@ -442,6 +450,20 @@ const styles = StyleSheet.create({
   videoViewTablet: { height: 300, marginTop: 30, marginBottom: 20, borderRadius: 20 },
   videoViewSmall: { height: 180, marginTop: 15, marginBottom: 5, borderRadius: 12 },
   webView: { flex: 1 },
+  backButton: {
+    position: 'absolute',
+    top: Platform.OS === 'ios' ? 60 : 50, // Adjusted for better safe area
+    left: 20,
+    zIndex: 100, // Increased zIndex
+    backgroundColor: 'rgba(0,0,0,0.5)', // Darker background for visibility
+    padding: 12, // Larger padding
+    borderRadius: 25,
+    elevation: 10,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
 });
 
 export default ProductScanScreen;
