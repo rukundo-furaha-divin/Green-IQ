@@ -1,192 +1,198 @@
 import os
+import gc
+import json
 import requests
 from datetime import datetime
+from PIL import Image
+import torch
+import torch.nn.functional as F
+from torchvision import transforms
 from flask import Flask, request, jsonify
+from transformers import AutoImageProcessor, AutoModelForImageClassification
 
-# ===============================
-# Configuration
-# ===============================
+# Set device
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-HF_API_URL = "https://api-inference.huggingface.co/models/Claudineuwa/waste_classifier_Isaac"
+# Load processor and model
+processor = AutoImageProcessor.from_pretrained("Claudineuwa/waste_classifier_Isaac")
+model = AutoModelForImageClassification.from_pretrained("Claudineuwa/waste_classifier_Isaac").to(device)
 
-HF_API_TOKEN = os.environ.get("HF_API_TOKEN")
-if not HF_API_TOKEN:
-    raise RuntimeError("HF_API_TOKEN environment variable is not set")
+# Transform
+transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor()
+])
 
-HF_HEADERS = {
-    "Authorization": f"Bearer {HF_API_TOKEN}"
-}
+# Label mapping
+id2label = model.config.id2label
 
-BACKEND_URL = os.environ.get(
-    "BACKEND_URL",
-    "https://green-iq-backend-xsui.onrender.com/wasteSubmission"
-)
-
-# ===============================
-# Flask App
-# ===============================
+# Backend URL configuration
+BACKEND_URL = os.environ.get("BACKEND_URL", "https://trash2treasure-backend.onrender.com/wasteSubmission")
 
 app = Flask(__name__)
 
-# ===============================
-# Root Route
-# ===============================
-
+# ROOT ROUTE - Test if server is working
 @app.route("/", methods=["GET"])
 def home():
     return jsonify({
-        "message": "Waste Classification API is running",
-        "inference_mode": "Hugging Face Inference API (remote)",
-        "model": "Claudineuwa/waste_classifier_Isaac",
-        "backend_url": BACKEND_URL,
-        "routes": {
-            "GET /": "Server status",
-            "GET /health": "Health check",
-            "POST /predict": "Image classification"
+        "message": "Waste Classification API is running successfully!",
+        "server_info": {
+            "device": str(device),
+            "model_loaded": model is not None,
+            "backend_url": BACKEND_URL,
+            "routes_available": [
+                "GET  / - This route (server status)",
+                "GET  /health - Health check",
+                "POST /predict - Image classification and send to backend"
+            ]
         }
     })
 
-# ===============================
-# Health Check
-# ===============================
-
+# HEALTH CHECK ROUTE
 @app.route("/health", methods=["GET"])
-def health():
+def health_check():
     return jsonify({
         "status": "healthy",
-        "model": "remote (huggingface)",
-        "timestamp": datetime.utcnow().isoformat()
+        "device": str(device),
+        "model_loaded": model is not None,
+        "backend_url": BACKEND_URL,
+        "message": "Server is running successfully",
+        "version": "2.0"
     })
 
-# ===============================
-# Prediction Route
-# ===============================
-
+# PREDICTION ROUTE - Classify image and send to backend
 @app.route("/predict", methods=["POST"])
-def predict():
+def predict_image():
+    print("Received request to /predict")
+    
     if "image" not in request.files:
-        return jsonify({
-            "success": False,
-            "error": "No image uploaded"
-        }), 400
+        print("No image in request")
+        return jsonify({"error": "No image uploaded", "success": False}), 400
 
-    image_file = request.files["image"]
+    file = request.files["image"]
+    print(f"Received image: {file.filename}")
 
     try:
-        # -------------------------------
-        # Call Hugging Face Inference API
-        # -------------------------------
-        hf_response = requests.post(
-            HF_API_URL,
-            headers=HF_HEADERS,
-            files={"file": image_file.read()},
-            timeout=30
-        )
-
-        if hf_response.status_code != 200:
-            return jsonify({
-                "success": False,
-                "error": "Hugging Face inference failed",
-                "details": hf_response.text
-            }), 500
-
-        predictions = hf_response.json()
-
-        if not isinstance(predictions, list) or not predictions:
-            return jsonify({
-                "success": False,
-                "error": "Invalid inference response",
-                "raw_response": predictions
-            }), 500
-
-        top_prediction = max(predictions, key=lambda x: x["score"])
-
-        label = top_prediction["label"]
-        confidence = float(top_prediction["score"])
-
-        # -------------------------------
-        # Send to backend
-        # -------------------------------
+        image = Image.open(file).convert("RGB")
+        print(f"Image loaded: {image.size}")
+        
+        inputs = processor(images=image, return_tensors="pt").to(device)
+        
+        with torch.no_grad():
+            outputs = model(**inputs)
+            logits = outputs.logits
+            probs = F.softmax(logits, dim=1)
+            conf, pred = torch.max(probs, dim=1)
+        
+        result = id2label[pred.item()]
+        confidence = conf.item()
+        
+        print(f"Prediction: {result}, Confidence: {confidence:.4f}")
+        
+        # Prepare data to send to backend
         classification_data = {
-            "prediction": label,
+            "prediction": result,
             "confidence": f"{confidence:.4f}",
-            "timestamp": datetime.utcnow().isoformat(),
-            "image_filename": image_file.filename,
+            "timestamp": datetime.now().isoformat(),
+            "image_filename": file.filename,
             "model_version": "Claudineuwa/waste_classifier_Isaac",
-            "inference": "huggingface-api"
+            "device": str(device)
         }
+        
+        # Send data to backend
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                return jsonify({"error": "Missing Authorization header", "success": False}), 401
 
-        auth_header = request.headers.get("Authorization")
-        if not auth_header:
-            return jsonify({
-                "success": False,
-                "error": "Missing Authorization header"
-            }), 401
-
-        backend_response = requests.post(
-            BACKEND_URL,
-            json=classification_data,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": auth_header
-            },
-            timeout=10
-        )
-
-        backend_result = (
-            backend_response.json()
-            if backend_response.status_code == 200
-            else {
-                "status": "backend_error",
-                "http_status": backend_response.status_code
-            }
-        )
-
+            backend_response = requests.post(
+                f"{BACKEND_URL}",
+                json=classification_data,
+                headers={
+                    "Content-Type": "application/json",
+                    "Authorization": auth_header
+                },
+                timeout=10
+            )
+            
+            if backend_response.status_code == 200:
+                print("Data successfully sent to backend")
+                backend_result = backend_response.json()
+            else:
+                print(f"Backend returned status {backend_response.status_code}")
+                backend_result = {"backend_status": "error", "message": "Failed to send to backend"}
+                
+        except requests.exceptions.RequestException as e:
+            print(f"Error sending to backend: {str(e)}")
+            backend_result = {"backend_status": "error", "message": f"Backend connection failed: {str(e)}"}
+        
         return jsonify({
-            "success": True,
-            "prediction": label,
+            "prediction": result,
             "confidence": f"{confidence:.4f}",
+            "success": True,
+            "message": "Classification successful",
             "backend_response": backend_result
         })
 
     except Exception as e:
+        print(f"Error in prediction: {str(e)}")
         return jsonify({
-            "success": False,
-            "error": str(e)
+            "error": f"Classification failed: {str(e)}", 
+            "success": False
         }), 500
 
-# ===============================
-# Error Handlers
-# ===============================
+    finally:
+        # Clean up memory
+        for var in ['inputs', 'outputs', 'probs', 'conf', 'pred', 'image']:
+            if var in locals():
+                del locals()[var]
+        gc.collect()
+        if torch.cuda.is_available():
+            torch.cuda.empty_cache()
 
+# ERROR HANDLERS
 @app.errorhandler(404)
-def not_found(_):
+def not_found(error):
     return jsonify({
         "error": "Route not found",
-        "available_routes": ["/", "/health", "/predict"]
+        "available_routes": [
+            "GET  /",
+            "GET  /health", 
+            "POST /predict"
+        ]
     }), 404
 
 @app.errorhandler(405)
-def method_not_allowed(_):
+def method_not_allowed(error):
     return jsonify({
-        "error": "Method not allowed"
+        "error": "Method not allowed",
+        "message": "Check the HTTP method (GET/POST) for this route"
     }), 405
 
-# ===============================
-# CORS (Optional)
-# ===============================
-
+# Handle CORS for React Native (if needed)
 @app.after_request
 def after_request(response):
-    response.headers.add("Access-Control-Allow-Origin", "*")
-    response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-    response.headers.add("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization')
+    response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
     return response
-
-# ===============================
-# App Runner
-# ===============================
 
 if __name__ == "__main__":
     port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
+    
+    print("=" * 50)
+    print(" Starting Waste Classification API")
+    print("=" * 50)
+    print(f"Server URL: http://0.0.0.0:{port}")
+    print(f"External URL: http://192.168.0.109:{port}")
+    print(f"Backend URL: {BACKEND_URL}")
+    print(f"Device: {device}")
+    print(f"Model loaded: {model is not None}")
+    print("\nAvailable Routes:")
+    print(f"• GET  http://192.168.0.109:{port}/")
+    print(f"• GET  http://192.168.0.109:{port}/health")
+    print(f"• POST http://192.168.0.109:{port}/predict")
+    print("\nReady to classify images and send data to backend!")
+    print("=" * 50)
+    
+    app.run(host="0.0.0.0", port=port, debug=True)
